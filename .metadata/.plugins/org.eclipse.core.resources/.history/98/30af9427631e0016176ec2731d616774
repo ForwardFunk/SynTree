@@ -1,7 +1,0 @@
-package utils;
-
-public class ASTNode {
-	public int parentInd;
-	public int[] childInd;
-	public String type;
-}
