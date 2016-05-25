@@ -17,6 +17,11 @@ public class ASTStore {
 		store = parser.parse(fileLoc, treeIdx);
 	}
 	
+
+	public Integer getNdIdx(Integer ndIdx) {
+		return store.get(ndIdx).ndIdx;
+	}
+	
 	public Integer getNdParentIdx(Integer ndIdx) {
 		return store.get(ndIdx).ndParentIdx;
 	}

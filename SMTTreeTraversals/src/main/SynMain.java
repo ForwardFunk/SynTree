@@ -34,7 +34,7 @@ public class SynMain {
 		cfg.put("model", "true");
 		
 		// Parse AST nodes from an augmented JSON file to a store
-		String fileLoc = program2;
+		String fileLoc = program5;
 		int treeIdx = 0;
 		ASTStore store = new ASTStore(fileLoc, treeIdx);
 		// Initialize synthesis context (which is also a wrapper for the Z3 context)
@@ -42,7 +42,7 @@ public class SynMain {
 		
 		int opNum = 10;
 		ctx.setOpNum(opNum);
-		test2(ctx);
+		test5(ctx);
 		
 		try {
 			BoolExpr synFormula = ctx.mkSynthesisFormula();
