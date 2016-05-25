@@ -1,0 +1,7 @@
+Program Analysis and Synthesis, Spring 2016, ETH Zurich
+
+## Project: Synthesising Tree Traversal Programs from Examples
+
+We provide a script 'run.sh' that will be used to test your solution and should be included in your submission. You should update the script such that it runs the synthesis on the training dataset and uses the synthesised program to compute output for new, previously unseen, testing examples.
+For testing purposes we provide a small sample of the input/output examples and their format which can be found in directories named 'test'.
+Additionally you should include in your submission any tests you created manually.
