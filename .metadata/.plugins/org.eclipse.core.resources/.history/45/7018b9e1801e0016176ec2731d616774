@@ -1,0 +1,75 @@
+package ast_utils;
+
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.HashMap;
+
+class ASTParser {
+
+	private static final String SPLIT_BY = ",";
+	private static final String DEFAULT_FILE_LOC = "sampletest1.csv";
+	
+	HashMap<Integer, ASTNode> parse(String fileLoc) {
+		
+		if (fileLoc.equals("")) {
+			fileLoc = DEFAULT_FILE_LOC;
+		}
+		
+		HashMap<Integer, ASTNode> ASTStore = new HashMap<Integer, ASTNode>();
+		BufferedReader csvReader = null;
+		try {
+			csvReader = new BufferedReader(new FileReader(fileLoc));
+			
+			// parse one ASTNode per line of CSV data
+			String line = "";
+			while ((line = csvReader.readLine()) != null) {
+				String[] ndData = line.split(SPLIT_BY);
+				
+				if (ndData[0].equals("") || ndData[1].equals("") || ndData[3].equals(""))
+					throw new MalformedCsvException();
+				
+				// parse atomic data
+				Integer ndIdx = Integer.parseInt(ndData[0]);
+				Integer ndParentIdx = Integer.parseInt(ndData[1]);
+				String ndType = ndData[3];
+				
+				// parse array data (indices of children of the current AST Node)
+				String[] ndChildren = ndData[2].substring(1,ndData[2].length()-1).split(SPLIT_BY);
+				int ndChildrenCnt = ndChildren.length;
+				
+				Integer[] ndChildrenIdx = new Integer[ndChildrenCnt];
+				if (ndChildrenCnt != 0) {
+					for (int i = 0; i < ndChildrenCnt; i++) {
+						ndChildrenIdx[i] = Integer.parseInt(ndChildren[i]);
+					}
+				}
+				
+				ASTStore.put(ndIdx, new ASTNode(ndIdx, ndParentIdx, ndChildrenIdx, ndType));
+				
+			}
+			
+		} catch (MalformedCsvException e) {
+			e.printStackTrace();
+			System.out.println("ASTParser: CSV file with converted AST in " + fileLoc + " is malformed");
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+			System.out.println("ASTParser: Couldn't find file: " + fileLoc);
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.out.println("ASTParser: IO exception reading line from file: " + fileLoc);
+		} finally {
+			if (csvReader != null) {
+				try {
+					csvReader.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+					System.out.println("ASTParser: Failed to close BufferedReader from file: " + fileLoc);
+				}
+			}
+		}
+
+		return ASTStore;
+	}
+}

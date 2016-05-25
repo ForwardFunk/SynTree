@@ -1,0 +1,139 @@
+package smt_helper;
+
+import ast_utils.ASTStore;
+
+import com.microsoft.z3.*;
+
+
+import java.util.ArrayList;
+import java.util.HashMap;
+
+import utils.*;
+
+
+public class SynContext extends Context {
+	
+	private ArrayList<Pair<Integer, Integer>> inOutPairs;
+	private ASTStore astStore;
+	private int instrNo;
+	
+	public SynContext(HashMap<String, String> cfg, ASTStore astStore) {
+		super(cfg);
+		this.astStore = astStore;
+		instrNo = 1;
+		inOutPairs = new ArrayList<Pair<Integer, Integer>>();
+	}
+		
+	public void setInstrNo(int instrNo) {
+		this.instrNo = instrNo;
+	}
+	
+	public void addInOutPair(Integer in, Integer out) {
+		inOutPairs.add(new Pair<Integer, Integer>(in, out));
+	}
+	
+	/* Following method tries to generate the following formula. 
+	 * If instrNo is 1 and DSL opCnt is 3 the following is generated.
+	 *  src = 3, dst = 1
+		0: (declare-const dst Int)
+		1: (assert 
+		2: (exists ((op Int)) 
+		3:	(and 
+		4:		(ite (= op 1) 
+		5:			(= dst (up 3))
+		6:			(ite (= op 2)
+		7:				(= dst (down-first 3))
+		8:				(= dst (down-last 3))))
+		9:		(= dst 1))))
+	 */
+	public BoolExpr mkSynthesisFormula() throws Exception {
+		// TODO mkExists
+		
+		if (instrNo == 0) 
+			throw new Exception("Cannot synthesise a program with 0 instructions...");
+		
+		if (DSLHelper.opCnt == 0) 
+			throw new Exception("Cannot synthesise a program with empty DSL...");
+		
+		// DSL op indices as bound variables for existential quantifier
+		// Line 2 in above example
+		//Expr[] opInd = new Expr[instrNo];	
+		Sort[] instrIndSorts = new Sort[instrNo];
+		Symbol[] instrIndNames = new Symbol[instrNo];
+		Expr[] instrIndVars = new Expr[instrNo];
+		ArrayList<IntExpr[]> dstVars = new ArrayList<IntExpr[]>();
+		
+		
+		// Initialize Op variables as switches for DSL operations
+		for (int i = 0; i < instrNo; i++) {
+			instrIndSorts[i] = mkIntSort();
+			instrIndNames[i] = mkSymbol("op"+i);
+			instrIndVars[i] = mkConst(instrIndNames[i], instrIndSorts[i]);
+		}
+		
+		// Initialize destination variables (chained in sequence for each program, one chain for each in/out pair)
+		for (int i = 0; i < inOutPairs.size(); i++) {
+			IntExpr[] dstVar = new IntExpr[instrNo];
+			for (int j = 0; j < instrNo; j++) {
+				dstVar[j] = mkIntConst("dst"+"_"+i+"_"+j);			
+			}	
+			dstVars.add(dstVar);
+		}
+		
+		
+		Expr existsBody = null;
+		for (int i = 0; i < inOutPairs.size(); i++) {
+			
+			// Add first nested ITE and the final equality
+			Expr nestITE = mkNestedITE(instrIndVars[0], dstVars.get(i)[0], mkInt(inOutPairs.get(i).first), DSLHelper.opCnt - 2);
+			BoolExpr reachedDst = mkEq(dstVars.get(i)[instrNo-1], mkInt(inOutPairs.get(i).second));
+			//BoolExpr boolNestITE = mk
+			BoolExpr currPairBody = mkAnd((BoolExpr) nestITE, reachedDst);
+			
+			// For each following instruction in the sequence,
+			// add a ITE switch for choosing the instruction as a nested ITE 
+			for (int j = 1; j < instrNo; j++) {
+				nestITE = mkNestedITE(instrIndVars[j], dstVars.get(i)[j], dstVars.get(i)[j-1]/*mkInt(inOutPairs.get(i).first)*/, DSLHelper.opCnt-2);
+				currPairBody = mkAnd((BoolExpr) nestITE, (BoolExpr) currPairBody);
+			}
+			
+			// In first iteration, just assign currPairBody to existsBody
+			if (existsBody == null) {
+				existsBody = currPairBody;
+			} else {
+				existsBody = mkAnd((BoolExpr) existsBody, currPairBody);
+			}
+		}
+		
+		//System.out.println(existsBody.toString());		
+		
+		BoolExpr synFormula = mkExists(instrIndSorts, instrIndNames, existsBody, 1, null, null, null, null);
+		
+		return synFormula;
+	}
+	
+	
+	/* Recursive function of generating a nested ITE constraint in the following example form:
+	 * 
+		4:		(ite (= op 1) 
+		5:			(= dst (up 3))
+		6:			(ite (= op 2)
+		7:				(= dst (down-first 3))
+		8:				(= dst (down-last 3))))
+	 */
+	private Expr mkNestedITE(Expr opIdxVar, IntExpr dstVar, IntExpr srcVar, int level) {
+		int currOpInd = DSLHelper.opCnt-level-1;
+		BoolExpr cond = mkEq(opIdxVar, mkInt(currOpInd));
+		//Expr tBranch = mkEq(dstVar, DSLHelper.getDSLOp(currOpInd, srcVar, astStore, this));
+		Expr tBranch = DSLHelper.getDSLOp(currOpInd, srcVar, dstVar, astStore, this);
+		System.out.println(currOpInd);
+		if (level == 0) {
+			//Expr fBranch = mkEq(dstVar, DSLHelper.getDSLOp(currOpInd+1, srcVar, astStore, this));
+			Expr fBranch = DSLHelper.getDSLOp(currOpInd, srcVar, dstVar, astStore, this);
+			return mkITE(cond, tBranch, fBranch);
+		} else {
+			Expr fBranch = mkNestedITE(opIdxVar, dstVar, srcVar, level-1);
+			return mkITE(cond, tBranch, fBranch);
+		}
+	}
+} 

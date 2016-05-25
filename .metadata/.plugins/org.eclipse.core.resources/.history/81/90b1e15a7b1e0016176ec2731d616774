@@ -1,0 +1,18 @@
+package ast_utils;
+
+public class ASTNode {
+	public Integer ndIdx;
+	public Integer ndParentIdx;
+	public Integer[] ndChildrenIdx;
+	public String ndType;
+	public String ndValue;
+	
+	public ASTNode(Integer ndIdx, Integer ndParentIdx, Integer[] ndChildrenIdx, String ndType) {
+		this.ndIdx = ndIdx;
+		this.ndParentIdx = ndParentIdx;
+		this.ndChildrenIdx = ndChildrenIdx;
+		this.ndType = ndType;
+		this.ndValue = "";
+	}	
+	
+}

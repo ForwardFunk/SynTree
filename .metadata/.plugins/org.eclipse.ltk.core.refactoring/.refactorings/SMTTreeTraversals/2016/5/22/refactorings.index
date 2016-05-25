@@ -1,0 +1,16 @@
+1463937073980	Move compilation unit
+1463937081226	Delete element
+1463951003363	Rename method 'addInOutPair'
+1463951054040	Rename field 'inOutPairs'
+1463955960784	Rename field 'opCnt'
+1463956238371	Rename field 'instrNo'
+1463956247626	Rename local variable 'instrNo'
+1463956257251	Rename method 'setInstrNo'
+1463956675337	Rename local variable 'instrIndSorts'
+1463956681900	Rename local variable 'instrIndNames'
+1463956702929	Rename field 'instrIndVars'
+1463956714782	Rename field 'instrNum'
+1463956724767	Rename method 'setInstrNum'
+1463956729791	Rename local variable 'instrNum'
+1463956968244	Rename package 'smt_helper'
+1464197989883	Delete element

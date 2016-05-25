@@ -1,0 +1,51 @@
+package smt;
+
+import java.util.HashMap;
+
+import com.microsoft.z3.*;
+
+public class SynMain {
+
+	/**
+	 * @param args
+	 */
+	
+	public static void main(String[] args) {
+		Global.ToggleWarningMessages(true);
+		
+		// Toggle model generation on
+		HashMap<String, String> cfg = new HashMap<String, String>();
+		cfg.put("model", "true");
+		
+		SynContext ctx = new SynContext(cfg);
+		
+		ctx.setInstrNo(10);
+		ctx.addInOutPair(3, 5);
+		ctx.addInOutPair(4, 5);
+		
+		try {
+			BoolExpr synFormula = ctx.mkSynthesisFormula();
+			
+			Solver solve = ctx.mkSolver();
+			solve.add(synFormula);
+			//System.out.println(solve.check().toString());
+			if (solve.check() == Status.SATISFIABLE) {
+				Model mod = solve.getModel();
+				System.out.println(mod);				
+				System.out.println("sat");
+			} else {
+				Model mod = solve.getModel();
+				System.out.println(mod);				
+				System.out.println("unsat");				
+			}
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		ctx.dispose();
+	}
+
+}

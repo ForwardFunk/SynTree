@@ -1,0 +1,59 @@
+package dsl;
+
+import com.microsoft.z3.*;
+
+/*
+ * NOTE: On every add of a new DSL operation:
+ * 	- update opCnt
+ * 	- add definition as a private method,
+ *  - add case to getDSLOp
+ */
+
+public class DSL {
+	
+	public static int opCnt = 4;
+	
+	// Will be called to get operation definitions,
+	// during generation of the Synthesis formula
+	public static ArithExpr getDSLOp(int ind, IntExpr node, Context z3Ctx) {
+		switch (ind) {
+		case 0:
+			return up(node, z3Ctx);
+		case 1:
+			return downFirst(node, z3Ctx);
+		case 2:
+			return downLast(node, z3Ctx);
+		case 3:
+			return nop(node, z3Ctx);
+		default:
+			return null;
+		}			
+	}
+
+	// Defined DSL operations
+	private static ArithExpr up(IntExpr node, Context z3Ctx) {		
+		IntExpr two = z3Ctx.mkInt(2);		
+		ArithExpr up = z3Ctx.mkDiv(node, two);
+		return up;
+	}
+	
+	private static ArithExpr downFirst(IntExpr node, Context z3Ctx) {
+		IntExpr two = z3Ctx.mkInt(2);	
+		ArithExpr df = z3Ctx.mkMul(node, two);
+		return df;
+	}
+	
+	private static ArithExpr downLast(IntExpr node, Context z3Ctx) {
+		IntExpr two = z3Ctx.mkInt(2);	
+		IntExpr one = z3Ctx.mkInt(1);		
+		ArithExpr df = z3Ctx.mkMul(node, two);
+		ArithExpr dl = z3Ctx.mkAdd(df, one);
+		return dl;
+	}
+	
+	private static ArithExpr nop(IntExpr node, Context z3Ctx) {
+		return node;
+	}
+	
+	
+}

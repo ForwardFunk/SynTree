@@ -1,0 +1,20 @@
+package utils;
+
+public class ASTNode {
+	public int ind;
+	public int parentInd;
+	public int[] childInd;
+	public String type;
+	public String value;
+	
+	public ASTNode(int ind, int parentInd, int[] childInd, String type) {
+		this.ind = ind;
+		this.parentInd = parentInd;
+		this.childInd = childInd;
+		this.type = type;
+		this.value = "";
+	}
+	
+	
+	
+}

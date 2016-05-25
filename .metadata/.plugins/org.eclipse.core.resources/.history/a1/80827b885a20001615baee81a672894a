@@ -1,0 +1,159 @@
+package smt_helper;
+
+import java.util.HashMap;
+import java.util.Iterator;
+
+import ast_utils.ASTStore;
+
+import com.microsoft.z3.*;
+
+/*
+ * NOTE: On every add of a new DSL operation:
+ * 	- update opCnt
+ * 	- add definition as a private method,
+ *  - add case to getDSLOp and update op code constants
+ */
+
+public class DSLHelper {
+	
+	public static final int OP_UP = 0;
+	public static final int OP_DOWN_FIRST = 1;
+	public static final int OP_DOWN_LAST = 2;
+	public static final int OP_PREV_NODE_VAL = 3;
+	public static final int OP_NOP = 4;
+	
+	public static int opCnt = 5;
+	
+	// Will be called to get operation definitions,
+	// during generation of the Synthesis formula
+	public static Expr getDSLOp(int opIdx, IntExpr srcNdIdx, IntExpr dstNdIdx, ASTStore astStore, Context z3Ctx) {
+		/*switch (opIdx) {
+		case OP_UP:
+			return up(ndIdx, astStore, z3Ctx);
+		case OP_DOWN_FIRST:
+			return downFirst(ndIdx, astStore, z3Ctx);
+		case OP_DOWN_LAST:
+			return downLast(ndIdx, astStore, z3Ctx);
+		case OP_PREV_NODE_VAL:
+			return prevNodeValue(ndIdx, astStore, z3Ctx);
+		case OP_NOP:
+			return nop(ndIdx, z3Ctx);
+	    // default shouldn't be called in any case
+		default:
+			return null;
+		}*/
+		Expr expr = null;
+		switch (opIdx) {
+		case OP_NOP:
+			expr = nop(srcNdIdx, dstNdIdx, z3Ctx);
+			break;
+		default:
+			expr = (Expr) mkNestedITE(opIdx, astStore, srcNdIdx, dstNdIdx, astStore.getNdIterator(), z3Ctx);
+		}
+		 
+		return expr;
+	}
+
+/*	// Defined DSL operations
+	private static ArithExpr up(IntExpr srcNode, IntExpr dstNode, ASTStore astStore, Context z3Ctx) {		
+		// BT definition:
+		ntExpr two = z3Ctx.mkInt(2);		
+		ArithExpr up = z3Ctx.mkDiv(node, two);
+		return up;
+		
+			
+		return mkNestedITE(OP_UP, astStore, srcNode, dstNode, astStore.getNdIterator(), z3Ctx)
+		
+	}
+	
+	private static ArithExpr downFirst(IntExpr node, ASTStore astStore, Context z3Ctx) {
+		// BT definition:		
+		IntExpr two = z3Ctx.mkInt(2);	
+		ArithExpr df = z3Ctx.mkMul(node, two);
+		return df;
+		
+		// AST definition:
+		int ndIdx = ((IntNum) node).getInt();
+		Integer[] ndChildrenIdx = astStore.getNdChildrenIdx(ndIdx);
+		if (ndChildrenIdx.length == 0) {
+			return node; // TODO: remove this branch after introducing constraints for no-children in the syn. formula
+		} else {
+			return z3Ctx.mkInt(ndChildrenIdx[0]);
+		}
+	}
+	
+	private static ArithExpr downLast(IntExpr node, ASTStore astStore, Context z3Ctx) {
+		// BT definition
+		IntExpr two = z3Ctx.mkInt(2);	
+		IntExpr one = z3Ctx.mkInt(1);		
+		ArithExpr df = z3Ctx.mkMul(node, two);
+		ArithExpr dl = z3Ctx.mkAdd(df, one);
+		return dl;
+		
+		// AST definition:
+				int ndIdx = ((IntNum) node).getInt();
+				Integer[] ndChildrenIdx = astStore.getNdChildrenIdx(ndIdx);
+				if (ndChildrenIdx.length == 0) {
+					return node; // TODO: remove this branch after introducing constraints for no-children in the syn. formula
+				} else {
+					return z3Ctx.mkInt(ndChildrenIdx[ndChildrenIdx.length-1]);
+				}
+	}
+	
+	private static ArithExpr prevNodeValue(IntExpr node, ASTStore astStore, Context z3Ctx) {
+		int ndIdx = ((IntNum) node).getInt();
+		return z3Ctx.mkInt(astStore.getNdPrevValue(ndIdx));
+	}
+	*/
+	private static Expr nop(IntExpr srcVar, IntExpr dstVar, Context z3Ctx) {
+		return z3Ctx.mkEq(dstVar, srcVar);
+	}
+	
+	private static Expr mkNestedITE(int opCode, ASTStore astStore, IntExpr srcVar, IntExpr dstVar, Iterator it, Context z3Ctx) {
+		
+		HashMap.Entry pair = (HashMap.Entry) it.next();
+		Integer srcNdIdx = (Integer) pair.getKey();
+		BoolExpr cond = z3Ctx.mkEq(srcVar, z3Ctx.mkInt(srcNdIdx));
+		
+		int dstNdVal = -1;
+		switch (opCode) {
+		case OP_UP:
+			dstNdVal = astStore.getNdParentIdx(srcNdIdx);
+			break;
+		case OP_DOWN_FIRST:
+			Integer[] children1 = astStore.getNdChildrenIdx(srcNdIdx);
+			if (children1.length == 0) {
+				dstNdVal = -1;
+			} else {
+				dstNdVal = children1[0];
+			}
+			break;
+		case OP_DOWN_LAST:
+			Integer[] children2 = astStore.getNdChildrenIdx(srcNdIdx);
+			if (children2.length == 0) {
+				dstNdVal = -1;
+			} else {
+				dstNdVal = children2[children2.length-1];
+			}
+			break;
+		case OP_PREV_NODE_VAL:
+			dstNdVal = astStore.getNdPrevValue(srcNdIdx);
+			break;
+		case OP_NOP:
+			dstNdVal = srcNdIdx;
+			break;
+		}
+		
+		Expr tBranch = z3Ctx.mkEq(dstVar, z3Ctx.mkInt(dstNdVal));
+		if (!it.hasNext()) {
+			//it.remove();
+			Expr fBranch = z3Ctx.mkEq(dstVar, z3Ctx.mkInt(-1));
+			return z3Ctx.mkITE(cond, tBranch, fBranch);
+		} else {
+			//it.remove();
+			Expr fBranch = mkNestedITE(opCode, astStore, srcVar, dstVar, it, z3Ctx);
+			return z3Ctx.mkITE(cond, tBranch, fBranch);
+		}
+	}
+	
+}

@@ -1,0 +1,75 @@
+package main;
+
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
+import java.util.TreeSet;
+
+import syn_core.DSLHelper;
+import syn_core.SynContext;
+
+import ast_utils.ASTStore;
+
+import com.microsoft.z3.*;
+
+public class SynMain {
+
+	/**
+	 * @param args
+	 */
+	
+	public static void main(String[] args) {
+		Global.ToggleWarningMessages(true);
+		
+		// Toggle model generation on in Z3 solver
+		HashMap<String, String> cfg = new HashMap<String, String>();
+		cfg.put("model", "true");
+		
+		// Parse AST nodes from an augmented JSON file to a store
+		String fileLoc = "programs_augmented.json";
+		int treeIdx = 0;
+		ASTStore store = new ASTStore(fileLoc, treeIdx);
+		// Initialize synthesis context (which is also a wrapper for the Z3 context)
+		SynContext ctx = new SynContext(cfg, store);
+		
+		int opNum = 30;
+		ctx.setOpNum(opNum);
+		//ctx.addSrcDstPair(src, dst)
+		//ctx.addSrcDstPair(20, 21);
+		ctx.addSrcDstPair(353, 330);
+		ctx.addSrcDstPair(379, 353);
+		ctx.addSrcDstPair(330, 309);
+		
+		
+		try {
+			BoolExpr synFormula = ctx.mkSynthesisFormula();
+			
+			Solver solve = ctx.mkSolver();
+			solve.add(synFormula);
+			Status stat = solve.check();
+			if (stat == Status.SATISFIABLE) {
+				System.out.println("Following program found:");
+				Model mod = solve.getModel();
+				TreeMap<Integer, Integer> interp = ctx.mkModelInterpretation(mod);
+				
+				Iterator<Map.Entry<Integer, Integer>> it = interp.entrySet().iterator();
+				while (it.hasNext()) {
+					Map.Entry<Integer, Integer> curr = it.next();
+					System.out.println(curr.getKey().toString() + ": " + DSLHelper.decodeDSLOp((Integer) curr.getValue()));
+				}
+			} else {		
+				System.out.println("Cannot find a program that satisfies all given src/dst pairs. Requested DSL op. number: " + opNum);				
+			}
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		
+		ctx.dispose();
+	}
+
+}

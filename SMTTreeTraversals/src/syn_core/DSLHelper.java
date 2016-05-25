@@ -108,4 +108,41 @@ public class DSLHelper {
 		}
 	}
 	
+	public static Integer applyDSLOp(Integer srcNdIdx, Integer opInd, ASTStore astStore) {
+		switch (opInd) {
+		case OP_UP:
+			return astStore.getNdParentIdx(srcNdIdx);
+		case OP_DOWN_FIRST:
+			Integer[] children1 = astStore.getNdChildrenIdx(srcNdIdx);
+			if (children1.length == 0) {
+				return -1;
+			} else {
+				return children1[0];
+			}
+		case OP_DOWN_LAST:
+			Integer[] children2 = astStore.getNdChildrenIdx(srcNdIdx);
+			if (children2.length == 0) {
+				return -1;
+			} else {
+				return children2[children2.length-1];
+			}
+		case OP_PREV_NODE_VAL:
+			return astStore.getNdPrevValue(srcNdIdx);
+		case OP_NOP:
+			return srcNdIdx;	
+		default:
+			return -1;
+		}
+	}
+	
+	public static Integer applyDSLSequence(Integer srcNdIdx, ASTStore astStore, Integer... opSequence) {
+		Integer currNd = srcNdIdx;
+		for (int i = 0; i < opSequence.length; i++) {
+			currNd = applyDSLOp(currNd, opSequence[i], astStore);
+			if (currNd == -1)
+				return -1;
+		}
+		return currNd;
+	}
+	
 }
