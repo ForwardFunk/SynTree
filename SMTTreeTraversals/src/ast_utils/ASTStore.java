@@ -26,6 +26,19 @@ public class ASTStore {
 		return store.get(ndIdx).ndParentIdx;
 	}
 	
+	public Integer getNdPrevLeafIdx(Integer ndIdx) {
+		return store.get(ndIdx).ndPrevLeaf;
+	}
+	public Integer getNdNextLeafIdx(Integer ndIdx) {
+		return store.get(ndIdx).ndNextLeaf;
+	}
+	public Integer getNdLeftIdx(Integer ndIdx) {
+		return store.get(ndIdx).ndLeft;
+	}
+	public Integer getNdRightIdx(Integer ndIdx) {
+		return store.get(ndIdx).ndRight;
+	}
+	
 	public Integer[] getNdChildrenIdx(Integer ndIdx) {
 		return store.get(ndIdx).ndChildrenIdx;
 	}

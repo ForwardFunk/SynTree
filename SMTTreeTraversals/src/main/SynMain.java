@@ -34,15 +34,15 @@ public class SynMain {
 		cfg.put("model", "true");
 		
 		// Parse AST nodes from an augmented JSON file to a store
-		String fileLoc = program5;
+		String fileLoc = program4;
 		int treeIdx = 0;
 		ASTStore store = new ASTStore(fileLoc, treeIdx);
 		// Initialize synthesis context (which is also a wrapper for the Z3 context)
 		SynContext ctx = new SynContext(cfg, store);
 		
-		int opNum = 10;
+		int opNum = 5;
 		ctx.setOpNum(opNum);
-		test5(ctx);
+		test4(ctx);
 		
 		try {
 			BoolExpr synFormula = ctx.mkSynthesisFormula();
@@ -57,10 +57,16 @@ public class SynMain {
 				TreeMap<Integer, Integer> interp = ctx.mkModelInterpretation(mod);
 				
 				Iterator<Map.Entry<Integer, Integer>> it = interp.entrySet().iterator();
+				Integer[] opSequence = new Integer[interp.size()];
+				int i = 0;
 				while (it.hasNext()) {
 					Map.Entry<Integer, Integer> curr = it.next();
 					System.out.println(curr.getKey().toString() + ": " + DSLHelper.decodeDSLOp((Integer) curr.getValue()));
+					opSequence[i] = (Integer) curr.getValue();
+					i++;
 				}
+				
+				//System.out.println("Dst="+DSLHelper.applyDSLSequence(525, store, opSequence).toString());
 			} else {		
 				System.out.println("Cannot find a program that satisfies all given src/dst pairs. Requested DSL op. number: " + opNum);				
 			}
@@ -77,13 +83,13 @@ public class SynMain {
 	private static void test1(SynContext ctx) {
 		ctx.addSrcDstPair(353, 330);
 		ctx.addSrcDstPair(379, 353);
-		ctx.addSrcDstPair(330, 309);		
+		ctx.addSrcDstPair(330, 309);	// different	
 	}
 	
 	private static void test2(SynContext ctx) {
-		/*ctx.addSrcDstPair(353, 330);
-		ctx.addSrcDstPair(379, 353);*/
-		ctx.addSrcDstPair(330, 309);		
+		ctx.addSrcDstPair(353, 330);
+		ctx.addSrcDstPair(379, 353);
+		ctx.addSrcDstPair(330, 309);
 		ctx.addSrcDstPair(311, 290);
 		ctx.addSrcDstPair(332, 311);
 		ctx.addSrcDstPair(355, 332);

@@ -16,13 +16,17 @@ import com.microsoft.z3.*;
 
 public class DSLHelper {
 
-	public static final int OP_CNT = 5;
+	public static final int OP_CNT = 9;
 	
 	public static final int OP_UP = 0;
 	public static final int OP_DOWN_FIRST = 1;
 	public static final int OP_DOWN_LAST = 2;
 	public static final int OP_PREV_NODE_VAL = 3;
-	public static final int OP_NOP = 4;	
+	public static final int OP_PREV_LEAF = 4;	
+	public static final int OP_NEXT_LEAF = 5;	
+	public static final int OP_LEFT = 6;	
+	public static final int OP_RIGHT = 7;	
+	public static final int OP_NOP = 8;
 	
 	// Will be called to get operation definitions,
 	// during generation of the Synthesis formula
@@ -50,6 +54,14 @@ public class DSLHelper {
 			return "DownLast";
 		case OP_PREV_NODE_VAL:
 			return "PrevNodeVal";
+		case OP_PREV_LEAF:
+			return "PrevLeaf";
+		case OP_NEXT_LEAF:
+			return "NextLeaf";
+		case OP_LEFT:
+			return "Left";
+		case OP_RIGHT:
+			return "Right";
 		case OP_NOP:
 			return "Nop";
 		default:
@@ -91,6 +103,18 @@ public class DSLHelper {
 		case OP_PREV_NODE_VAL:
 			dstNdVal = astStore.getNdPrevValue(srcNdIdx);
 			break;
+		case OP_PREV_LEAF:
+			dstNdVal = astStore.getNdPrevLeafIdx(srcNdIdx);
+			break;
+		case OP_NEXT_LEAF:
+			dstNdVal = astStore.getNdNextLeafIdx(srcNdIdx);
+			break;
+		case OP_LEFT:
+			dstNdVal = astStore.getNdLeftIdx(srcNdIdx);
+			break;
+		case OP_RIGHT:
+			dstNdVal = astStore.getNdRightIdx(srcNdIdx);
+			break;
 		case OP_NOP:
 			dstNdVal = srcNdIdx;
 			break;
@@ -128,6 +152,14 @@ public class DSLHelper {
 			}
 		case OP_PREV_NODE_VAL:
 			return astStore.getNdPrevValue(srcNdIdx);
+		case OP_PREV_LEAF:
+			return astStore.getNdPrevLeafIdx(srcNdIdx);
+		case OP_NEXT_LEAF:
+			return astStore.getNdNextLeafIdx(srcNdIdx);
+		case OP_LEFT:
+			return astStore.getNdLeftIdx(srcNdIdx);
+		case OP_RIGHT:
+			return astStore.getNdRightIdx(srcNdIdx);
 		case OP_NOP:
 			return srcNdIdx;	
 		default:

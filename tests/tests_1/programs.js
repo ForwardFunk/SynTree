@@ -60,15 +60,15 @@ exports.runTests = function(filter)  {
       }
    );
    test("only_body", 895, 1064,  {
-         type:"definition", 
-         end:28      }, // C2 DST
+         type:"definition",  // C3 DST
+         end:28      },
       function(data)  {
          eq(data.start, 888);
       }
    );
    test("replace_body", 895, "
   file",  {
-         type:"definition", // C2 DST, C2 SRC
+         type:"definition", // C2 DST, C3 SRC
          end:7      }, 
       function(data)  {
          eq(data.start, 888);
