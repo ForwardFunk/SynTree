@@ -18,14 +18,16 @@ public class SynContext extends Context {
 	private ArrayList<Pair<Integer, Integer>> srcDstPairs;
 	private ASTStore astStore;
 	private int opNum;
+	private boolean efficientLookup;
 	
 	private Expr[] opIndVars;
 	
-	public SynContext(HashMap<String, String> cfg, ASTStore astStore) {
+	public SynContext(HashMap<String, String> cfg, ASTStore astStore, boolean efficientLookup) {
 		super(cfg);
 		this.astStore = astStore;
 		opNum = 1;
 		srcDstPairs = new ArrayList<Pair<Integer, Integer>>();
+		this.efficientLookup = efficientLookup;
 	}
 		
 	public void setOpNum(int opNum) {
@@ -83,7 +85,12 @@ public class SynContext extends Context {
 			}	
 			dstVars.add(dstVar);
 		}
-		
+
+		// If DSL ops are encoded as lookups into DSL defined arrays, then also add the definiton of stores of these arrays;
+		BoolExpr dslArrayDefinitions = null;
+		if (efficientLookup) {
+			dslArrayDefinitions = DSLHelper.initDSLArrays(astStore, this);
+		}
 
 		System.out.println("mkSynthesisFormula: Formulating the body of 'exists' quantifier...");
 		Expr existsBody = null;
@@ -124,7 +131,16 @@ public class SynContext extends Context {
 		}
 
 		System.out.println("mkSynthesisFormula: Creating - (&& switch_constraints exists_quantifier)...");
+		
 		BoolExpr synFormula = mkAnd(constraintsDSLOpSwitches, existDSLOpSwitches);
+		
+		
+		//ArrayList<Object> res = new ArrayList<>();
+		//res.add(synFormula);
+		//res.add(dslArrayDefinitions);
+		if (efficientLookup)
+			synFormula = mkAnd(dslArrayDefinitions, synFormula);
+		
 		return synFormula;
 	}
 
@@ -138,9 +154,10 @@ public class SynContext extends Context {
 	 */
 	private Expr mkNestedITE(Expr opIdxVar, IntExpr dstVar, IntExpr srcVar, int currOpInd) {
 		BoolExpr cond = mkEq(opIdxVar, mkInt(currOpInd));
-		Expr tBranch = DSLHelper.getDSLOp(currOpInd, srcVar, dstVar, astStore, this);
+		Expr tBranch = DSLHelper.getDSLOp(currOpInd, srcVar, dstVar, astStore, this, efficientLookup);
 		if (currOpInd == DSLHelper.OP_CNT - 1) {
-			Expr fBranch = DSLHelper.getDSLOp(currOpInd, srcVar, dstVar, astStore, this);
+			//Expr fBranch = DSLHelper.getDSLOp(currOpInd, srcVar, dstVar, astStore, this, efficientLookup);
+			Expr fBranch = mkEq(dstVar, mkInt(-1));
 			return mkITE(cond, tBranch, fBranch);
 		} else {
 			Expr fBranch = mkNestedITE(opIdxVar, dstVar, srcVar, currOpInd+1);

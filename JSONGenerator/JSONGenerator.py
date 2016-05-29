@@ -21,13 +21,18 @@ def postprocess(nodes):
         currNode = nodes[key]
         if currNode.children != "":
             children = [int(i.lstrip()) for i in currNode.children[1:-1].split(",")]
+            #print(children)
             for child in children:
                 nodes[child].parent = currNode.id
     
     # set previous node with same value
     for curr in sorted(nodes.keys(), reverse=True):
+        if nodes[curr].value == "":
+            nodes[curr].previous_id = ""
+            continue
         for search in reversed(range(0,curr)):
             if nodes[search].value == nodes[curr].value:
+                #print(str(search) + " " + str(curr))
                 nodes[curr].previous_id = search
                 break
             nodes[curr].previous_id = ""
@@ -45,19 +50,20 @@ def postprocess(nodes):
         
         
         children = [int(i.lstrip()) for i in nodes[currNode.parent].children[1:-1].split(",")]
+        
         ind_curr = children.index(curr)
         
         left = ind_curr-1
         if left < 0:
             nodes[curr].left = ""
         else:
-            nodes[curr].left = left
+            nodes[curr].left = children[left]
             
         right = ind_curr+1
         if right >= len(children):
             nodes[curr].right = ""  
         else:
-            nodes[curr].right = right 
+            nodes[curr].right = children[right] 
             
     # set prev_leaf  
     for curr in sorted(nodes.keys(),reverse=True):
@@ -78,8 +84,7 @@ def postprocess(nodes):
     return nodes
 
 if __name__ == '__main__':
-    programs = ["programs1.json", "programs2.json", "programs3.json", "programs4.json", "programs5.json"]
-    #programs = ["programs1.json"]
+    programs = ["programsSimple.json"]#["programs1.json", "programs2.json", "programs3.json", "programs4.json", "programs5.json"]
     for program in programs:
         with open(program, "r") as f:
             nodes = {}

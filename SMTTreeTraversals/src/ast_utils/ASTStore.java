@@ -43,6 +43,23 @@ public class ASTStore {
 		return store.get(ndIdx).ndChildrenIdx;
 	}
 	
+	public Integer getNdDownFirstIdx(Integer ndIdx) {
+		Integer[] children = store.get(ndIdx).ndChildrenIdx;
+		if (children.length == 0)
+			return -1;
+		else
+			return children[0];
+	}
+	
+	public Integer getNdDownLastIdx(Integer ndIdx) {
+		Integer[] children = store.get(ndIdx).ndChildrenIdx;
+		if (children.length == 0)
+			return -1;
+		else
+			return children[children.length-1];
+	}
+	
+	
 	public String getNdType(Integer ndIdx) {
 		return store.get(ndIdx).ndType;
 	}
