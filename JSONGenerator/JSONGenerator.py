@@ -36,7 +36,20 @@ def postprocess(nodes):
                 nodes[curr].previous_id = search
                 break
             nodes[curr].previous_id = ""
-        
+            
+    # set previous node with same type
+    '''
+    for curr in sorted(nodes.keys(), reverse=True):
+        if nodes[curr].type == "":
+            nodes[curr].previous_id_type = ""
+            continue
+        for search in reversed(range(0,curr)):
+            if nodes[search].type == nodes[curr].type:
+                #print(str(search) + " " + str(curr))
+                nodes[curr].previous_id_type = search
+                break
+            nodes[curr].previous_id_type = ""
+    '''
     # set left, right
     for curr in nodes.keys():
         currNode = nodes[curr];
@@ -84,7 +97,7 @@ def postprocess(nodes):
     return nodes
 
 if __name__ == '__main__':
-    programs = ["programsSimple.json"]#["programs1.json", "programs2.json", "programs3.json", "programs4.json", "programs5.json"]
+    programs = ["programs1.json", "programs2.json", "programs3.json", "programs4.json", "programs5.json"]
     for program in programs:
         with open(program, "r") as f:
             nodes = {}

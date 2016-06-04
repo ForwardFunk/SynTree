@@ -26,16 +26,17 @@ class ASTParser {
 	private static final String leftIdx = "left";
 	private static final String rightIdx = "right";
 	private static final String prevNodeValueIdx = "previous_id";
+	//private static final String prevNodeTypeIdx = "previous_id_type";
 	private static final String childrenIdx = "children";
 	private static final String type = "type";
 	
 	
-	HashMap<Integer, ASTNode> parse(String fileLoc, int goalTreeIdx) {
+	HashMap<Integer, HashMap<Integer, ASTNode>> parse(String fileLoc) {
 		if (fileLoc.equals("")) {
 			fileLoc = DEFAULT_FILE_LOC;
 		}
 
-		HashMap<Integer, ASTNode> ASTStore = new HashMap<Integer, ASTNode>();
+		HashMap<Integer, HashMap<Integer, ASTNode>> astStore = new HashMap<>();
 		BufferedReader jsonReader = null;
 		try {
 			jsonReader = new BufferedReader(new FileReader(fileLoc));
@@ -48,12 +49,9 @@ class ASTParser {
 				
 				JsonElement jElement = parser.parse(jsonLine);
 				JsonArray mainArray = jElement.getAsJsonArray();
-				JsonObject jTreeIdx = mainArray.get(0).getAsJsonObject();//.getAsJsonObject(treeIdx);
+				JsonObject jTreeIdx = mainArray.get(0).getAsJsonObject();
 				int currTreeIdx = jTreeIdx.get(program_id).getAsInt();
-				int a = 5;
-				
-				if (currTreeIdx != goalTreeIdx)
-					return null;
+				astStore.put(currTreeIdx, new HashMap<Integer, ASTNode>());
 				
 				for (int i = 1; i < mainArray.size(); i++) {
 					JsonObject ndObject = mainArray.get(i).getAsJsonObject();
@@ -65,6 +63,9 @@ class ASTParser {
 					
 					String ndPrevValueIdxStr = ndObject.get(prevNodeValueIdx).getAsString();
 					Integer ndPrevValueIdx = ndPrevValueIdxStr.equals("") ? -1 : Integer.parseInt(ndPrevValueIdxStr);
+					
+					/*String ndPrevTypeIdxStr = ndObject.get(prevNodeTypeIdx).getAsString();
+					Integer ndPrevTypeIdx = ndPrevTypeIdxStr.equals("") ? -1 : Integer.parseInt(ndPrevTypeIdxStr);*/
 					
 					String ndPrevLeafIdxStr = ndObject.get(prevLeafIdx).getAsString();
 					Integer ndPrevLeafIdx = ndPrevLeafIdxStr.equals("") ? -1 : Integer.parseInt(ndPrevValueIdxStr);
@@ -94,7 +95,7 @@ class ASTParser {
 						ndChildren = new Integer[0];
 					}
 					
-					ASTStore.put(ndIdx, new ASTNode(ndIdx, ndParentIdx, ndPrevLeafIdx, ndNextLeafIdx, ndLeftIdx, ndRightIdx, ndPrevValueIdx, ndChildren, ndType, ndValue));
+					astStore.get(currTreeIdx).put(ndIdx, new ASTNode(ndIdx, ndParentIdx, ndPrevLeafIdx, ndNextLeafIdx, ndLeftIdx, ndRightIdx, ndPrevValueIdx, /*ndPrevTypeIdx,*/ ndChildren, ndType, ndValue));
 				}
 				//int currTreeIdx = mainArray.getAsInt(treeIdx);*/
 				
@@ -115,9 +116,7 @@ class ASTParser {
 				}
 			}
 		}
-		return ASTStore;
-		
-		
+		return astStore;	
 	}
 	
 	private HashMap<Integer, ASTNode> parseCSV(String fileLoc) {

@@ -34,8 +34,8 @@ public class SynContext extends Context {
 		this.opNum = opNum;
 	}
 	
-	public void addSrcDstPair(Integer src, Integer dst) {
-		srcDstPairs.add(new Pair<Integer, Integer>(src, dst));
+	public void addSrcDstPair(Pair<Integer, Integer> srcDstPair) {
+		srcDstPairs.add(srcDstPair);
 	}
 	
 	/* Following method tries to generate the following formula. 
@@ -86,12 +86,16 @@ public class SynContext extends Context {
 			dstVars.add(dstVar);
 		}
 
-		// If DSL ops are encoded as lookups into DSL defined arrays, then also add the definiton of stores of these arrays;
+		// If DSL ops are encoded as lookups into DSL defined arrays, then also add the definition of stores of these arrays;
 		BoolExpr dslArrayDefinitions = null;
 		if (efficientLookup) {
 			dslArrayDefinitions = DSLHelper.initDSLArrays(astStore, this);
 		}
-
+		/*BoolExpr dslFunDefinitions = null;
+		if (efficientLookup) {
+			dslFunDefinitions = DSLHelper.initDSLMacros(astStore, this);
+		}*/
+		
 		System.out.println("mkSynthesisFormula: Formulating the body of 'exists' quantifier...");
 		Expr existsBody = null;
 		for (int i = 0; i < srcDstPairs.size(); i++) {
@@ -140,7 +144,7 @@ public class SynContext extends Context {
 		//res.add(dslArrayDefinitions);
 		if (efficientLookup)
 			synFormula = mkAnd(dslArrayDefinitions, synFormula);
-		
+			//synFormula = dslArrayDefinitions;
 		return synFormula;
 	}
 

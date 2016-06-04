@@ -1,5 +1,9 @@
 package main;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -7,150 +11,178 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 import java.util.TreeSet;
-
-import syn_core.DSLHelper;
-import syn_core.SynContext;
+import java.util.stream.Stream;
 
 import ast_utils.ASTStore;
 
-import com.microsoft.z3.*;
+import syn_core.BranchClassifier;
+import syn_core.DSLHelper;
+import utils.Pair;
 
 public class SynMain {
 
-	/**
-	 * @param args
-	 */
-
-	private static final String programSimple = "programs_augmented_simple.json";
-	private static final String program1 = "programs_augmented1.json";
-	private static final String program2 = "programs_augmented2.json";
-	private static final String program3 = "programs_augmented3.json";
-	private static final String program4 = "programs_augmented4.json";
-	private static final String program5 = "programs_augmented5.json";
+	public static int maxDslOpNum = 0;
+	public static String fNameAst = "";
+	public static String fNameTrain = "";
+	public static String fNameTest = "";
+	public static boolean efficientLookup = false;
+	public static HashMap<Integer, ArrayList<Pair<Integer, Integer>>> trainSrcDstPairs;
+	public static HashMap<Integer, ArrayList<Integer>> trainSrcVals;
+	public static HashMap<Integer, ArrayList<Pair<Integer,Integer>>> testSrcDstPairs;
+	public static ASTStore astStore;
 	
-	public static void main(String[] args) {
-		Global.ToggleWarningMessages(true);
+	
+	private static BranchClassifier bc;
+	private static HashMap<Pair<Integer, Object>, TreeMap<Integer, Integer>> program;
+	
+	public static void main(String[] argv) {
 		
-		// Toggle model generation on in Z3 solver
-		HashMap<String, String> cfg = new HashMap<String, String>();
-		cfg.put("model", "true");
+		fNameAst = "programs_augmented4.json";
+		fNameTrain = "../tests/tests_4/harder/train";
+		fNameTest = "../tests/tests_4/harder/test";
+		efficientLookup = true;
+		maxDslOpNum = 7;
 		
-		// Parse AST nodes from an augmented JSON file to a store
-		String fileLoc = program2;
-		int treeIdx = 0;
-		boolean efficientLookup = true;
+		// parse augmented AST from JSON
+		astStore = new ASTStore(fNameAst);
 		
-		ASTStore store = new ASTStore(fileLoc, treeIdx);
-		// Initialize synthesis context (which is also a wrapper for the Z3 context)
-		SynContext ctx = new SynContext(cfg, store, efficientLookup);
-		int opNum = 10;
-		ctx.setOpNum(opNum);
-		test2(ctx);
+		parseTrainingData();
+		parseTestData();
 		
-		try {
-			BoolExpr synFormula = ctx.mkSynthesisFormula();
-			Solver solve = ctx.mkSolver();
-			solve.add(synFormula);
-			/*BoolExpr synFormula = (BoolExpr) synResult.get(0);
+		Iterator it = trainSrcDstPairs.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry en = (Entry) it.next();
+			Integer treeIdx = (Integer) en.getKey();
+			ArrayList<Pair<Integer, Integer>> srcDstPairs = (ArrayList<Pair<Integer, Integer>>) en.getValue();
+			astStore.setTreeIdx(treeIdx);
 			
-			if (efficientLookup) {
-				ArrayList<BoolExpr> dslArrayDefinitions = (ArrayList<BoolExpr>) synResult.get(1);
-				for (BoolExpr arrDef : dslArrayDefinitions) {
-					solve.add(arrDef);
-				}
-			}*/
-			
-			System.out.println("main: Checking SMT of synthesis formula with max DSL op count: " + opNum + "...");
-			Status stat = solve.check();
-			if (stat == Status.SATISFIABLE) {
-				System.out.println("Following program found:");
-				Model mod = solve.getModel();
-				TreeMap<Integer, Integer> interp = ctx.mkModelInterpretation(mod);
-				
-				Iterator<Map.Entry<Integer, Integer>> it = interp.entrySet().iterator();
-				Integer[] opSequence = new Integer[interp.size()];
-				int i = 0;
-				while (it.hasNext()) {
-					Map.Entry<Integer, Integer> curr = it.next();
-					System.out.println(curr.getKey().toString() + ": " + DSLHelper.decodeDSLOp((Integer) curr.getValue()));
-					opSequence[i] = (Integer) curr.getValue();
-					i++;
-				}
-				
-				System.out.println("Dst="+DSLHelper.applyDSLSequence(451, store, opSequence).toString());
-				System.out.println("Dst="+DSLHelper.applyDSLSequence(286, store, opSequence).toString());
-				System.out.println("Dst="+DSLHelper.applyDSLSequence(210, store, opSequence).toString());
-				System.out.println("Dst="+DSLHelper.applyDSLSequence(232, store, opSequence).toString());
-			} else {		
-				System.out.println("Cannot find a program that satisfies all given src/dst pairs. Requested DSL op. number: " + opNum);				
+			if (SynEngine.trainProgram(treeIdx, astStore, efficientLookup, false, null, srcDstPairs)) {
+				System.out.println(SynEngine.modelInterpretation);
+				testProgram(false);
+			} else if (SynEngine.trainBranchedProgram(treeIdx, (bc=new BranchClassifier(astStore, srcDstPairs)), astStore, efficientLookup, srcDstPairs)) {
+				testProgram(true);				
+			} else {
+				System.out.println("Couldn't find a satisfying program...");
 			}
 			
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		}
 		
+	}
+	
+	private static void testProgram(boolean branched) {
+		testSrcDstPairs = new HashMap<>();
+		Iterator it = trainSrcVals.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry en = (Entry) it.next();
+			Integer treeIdx = (Integer) en.getKey();
+			ArrayList<Integer> srcNds = (ArrayList<Integer>) en.getValue();
+			for (int srcNdIdx : srcNds) {
+				TreeMap<Integer, Integer> program = null;
+				if (branched) {
+					Iterator itPrograms = SynEngine.branchedModelInterpretation.entrySet().iterator();
+					TreeMap<Integer, Integer> defaultProgram = null;	
+					while (itPrograms.hasNext()) {
+						Map.Entry enPrograms = (Entry) itPrograms.next();
+						Pair<Integer, Object> branchCond = (Pair<Integer, Object>) enPrograms.getKey();
+						TreeMap<Integer, Integer> currProgram = (TreeMap<Integer, Integer>) enPrograms.getValue();
+						if (branchCond.second.toString().equals("")) {
+							defaultProgram = currProgram;
+						}
+						else if (bc.classifySrcNode(srcNdIdx, branchCond)) {
+							program = currProgram;
+							break;
+						}
+					}
+					if (program == null) {
+						program = defaultProgram;
+					}
+				} else {
+					program = SynEngine.modelInterpretation;
+				}
+				System.out.println(program);
+				Integer[] programDslSequence = new Integer[program.size()];
+				Iterator itProgram = program.entrySet().iterator();
+				int i = 0;
+				while (itProgram.hasNext()) {
+					Map.Entry enProgram = (Entry) itProgram.next();
+					programDslSequence[i++]=(Integer) enProgram.getValue();
+				}
+				if (!testSrcDstPairs.containsKey(treeIdx))
+					testSrcDstPairs.put(treeIdx, new ArrayList<Pair<Integer, Integer>>());
+				testSrcDstPairs.get(treeIdx).add(new Pair(srcNdIdx, DSLHelper.applyDSLSequence(srcNdIdx, astStore, programDslSequence)));
+			}
+		}
+		System.out.println(testSrcDstPairs);
+	}
+	
+	private static void parseTrainingData() {
+		trainSrcDstPairs = new HashMap<>();
 		
-		ctx.dispose();
+		BufferedReader rdr = null;
+		try {
+			rdr = new BufferedReader(new FileReader(fNameTrain));
+			
+			String line;
+			while ((line = rdr.readLine()) != null) {
+				if (!line.equals("")) {
+					String[] val = line.split("\\s+");
+					int treeIdx = Integer.parseInt(val[0]);
+					int srcIdx = Integer.parseInt(val[1]);
+					int dstIdx = Integer.parseInt(val[2]);
+					if (!trainSrcDstPairs.containsKey(treeIdx))
+						trainSrcDstPairs.put(treeIdx, new ArrayList<Pair<Integer, Integer>>());
+					
+					trainSrcDstPairs.get(treeIdx).add(new Pair(srcIdx, dstIdx));			
+				}
+			}
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			try {
+				rdr.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 	}
 	
-	private static void testSimple(SynContext ctx) {
-		ctx.addSrcDstPair(3, 1);
-	}
-	
-	private static void test1(SynContext ctx) {
-		ctx.addSrcDstPair(353, 330);
-		ctx.addSrcDstPair(379, 353);
-		ctx.addSrcDstPair(330, 309);	// different	
-	}
-	
-	private static void test2(SynContext ctx) {
-		/*ctx.addSrcDstPair(353, 330);
-		ctx.addSrcDstPair(379, 353);
-		ctx.addSrcDstPair(330, 309);*/
-		ctx.addSrcDstPair(311, 290);
-		ctx.addSrcDstPair(332, 311);
-		ctx.addSrcDstPair(355, 332);
-		ctx.addSrcDstPair(381, 355);		
-	}
-	
-	private static void test3(SynContext ctx) {
-		ctx.addSrcDstPair(194, 119);
-		ctx.addSrcDstPair(284, 194);
-		ctx.addSrcDstPair(362, 284);		
-	}
-	
-	private static void test4(SynContext ctx) {
-
-		//easy
-		ctx.addSrcDstPair(210, 202);
-		ctx.addSrcDstPair(232, 224);
-		ctx.addSrcDstPair(286, 246);
+	private static void parseTestData() {
+		trainSrcVals = new HashMap<>();
 		
-		// hard
-		ctx.addSrcDstPair(451, 440);
-		ctx.addSrcDstPair(467, 456);
+		BufferedReader rdr = null;
+		try {
+			rdr = new BufferedReader(new FileReader(fNameTest));
+			String line;
+			while ((line = rdr.readLine()) != null) {
+				if (!line.equals("")) {
+					String[] val = line.split("\\s+");
+					int treeIdx = Integer.parseInt(val[0]);
+					int srcIdx = Integer.parseInt(val[1]);
+					if (!trainSrcVals.containsKey(treeIdx))
+						trainSrcVals.put(treeIdx, new ArrayList<Integer>());
+					
+					trainSrcVals.get(treeIdx).add(srcIdx);			
+				}
+			}
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} finally {
+			try {
+				rdr.close();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 		
 	}
-	
-	private static void test5(SynContext ctx) {
-		// easy
-		ctx.addSrcDstPair(24, 21);
-		ctx.addSrcDstPair(43, 40);
-		ctx.addSrcDstPair(66, 63);
-		ctx.addSrcDstPair(91, 88);
-		
-		// harder (doesnt involve these above)
-		// even harder (involves above)
-
-		ctx.addSrcDstPair(27, 24);
-		ctx.addSrcDstPair(46, 43);
-		ctx.addSrcDstPair(49, 46);
-		ctx.addSrcDstPair(69, 66);
-		ctx.addSrcDstPair(72, 69);
-		ctx.addSrcDstPair(75, 72);
-		ctx.addSrcDstPair(94, 91);
-		
-	}
-
 }

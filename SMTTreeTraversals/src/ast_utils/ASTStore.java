@@ -5,46 +5,78 @@ import java.util.Iterator;
 
 public class ASTStore {
 
-	private HashMap<Integer, ASTNode> store;
+	private HashMap<Integer, HashMap<Integer, ASTNode>> store;
+	private int treeIdx;
 	
-	public ASTStore(String fileLoc, int treeIdx) {
-		store = new HashMap<Integer, ASTNode>();
-		init(fileLoc, treeIdx);
+	public ASTStore(String fileLoc) {
+		store = new HashMap<>();
+		init(fileLoc);
 	}
 	
-	public void init(String fileLoc, int treeIdx) {
+	public void init(String fileLoc) {
 		ASTParser parser = new ASTParser();
-		store = parser.parse(fileLoc, treeIdx);
+		store = parser.parse(fileLoc);
 	}
 	
+	public void setTreeIdx(int treeIdx) {
+		this.treeIdx = treeIdx;
+	}
 
 	public Integer getNdIdx(Integer ndIdx) {
-		return store.get(ndIdx).ndIdx;
+		ASTNode res = store.get(treeIdx).get(ndIdx);
+		if (res == null)
+			return -1;
+		else
+			return res.ndIdx;
 	}
 	
 	public Integer getNdParentIdx(Integer ndIdx) {
-		return store.get(ndIdx).ndParentIdx;
+		ASTNode res = store.get(treeIdx).get(ndIdx);
+		if (res == null)
+			return -1;
+		else
+			return res.ndParentIdx;
 	}
 	
 	public Integer getNdPrevLeafIdx(Integer ndIdx) {
-		return store.get(ndIdx).ndPrevLeaf;
+		ASTNode res = store.get(treeIdx).get(ndIdx);
+		if (res == null)
+			return -1;
+		else
+			return res.ndPrevLeaf;
 	}
 	public Integer getNdNextLeafIdx(Integer ndIdx) {
-		return store.get(ndIdx).ndNextLeaf;
+		ASTNode res = store.get(treeIdx).get(ndIdx);
+		if (res == null)
+			return -1;
+		else
+			return res.ndNextLeaf;
 	}
 	public Integer getNdLeftIdx(Integer ndIdx) {
-		return store.get(ndIdx).ndLeft;
+		ASTNode res = store.get(treeIdx).get(ndIdx);
+		if (res == null)
+			return -1;
+		else
+		return res.ndLeft;
 	}
 	public Integer getNdRightIdx(Integer ndIdx) {
-		return store.get(ndIdx).ndRight;
+		ASTNode res = store.get(treeIdx).get(ndIdx);
+		if (res == null)
+			return -1;
+		else
+		return res.ndRight;
 	}
 	
 	public Integer[] getNdChildrenIdx(Integer ndIdx) {
-		return store.get(ndIdx).ndChildrenIdx;
+		ASTNode res = store.get(treeIdx).get(ndIdx);
+		if (res == null)
+			return new Integer[0];
+		else
+			return res.ndChildrenIdx;
 	}
 	
 	public Integer getNdDownFirstIdx(Integer ndIdx) {
-		Integer[] children = store.get(ndIdx).ndChildrenIdx;
+		Integer[] children = store.get(treeIdx).get(ndIdx).ndChildrenIdx;
 		if (children.length == 0)
 			return -1;
 		else
@@ -52,7 +84,7 @@ public class ASTStore {
 	}
 	
 	public Integer getNdDownLastIdx(Integer ndIdx) {
-		Integer[] children = store.get(ndIdx).ndChildrenIdx;
+		Integer[] children = store.get(treeIdx).get(ndIdx).ndChildrenIdx;
 		if (children.length == 0)
 			return -1;
 		else
@@ -61,18 +93,38 @@ public class ASTStore {
 	
 	
 	public String getNdType(Integer ndIdx) {
-		return store.get(ndIdx).ndType;
+		ASTNode res = store.get(treeIdx).get(ndIdx);
+		if (res == null)
+			return "";
+		else
+			return res.ndType;
 	}
 	
 	public String getNdValue(Integer ndIdx) {
-		return store.get(ndIdx).ndValue;
+		ASTNode res = store.get(treeIdx).get(ndIdx);
+		if (res == null)
+			return "";
+		else
+			return res.ndValue;
 	}
 	
 	public Integer getNdPrevValue(Integer ndIdx) {
-		return store.get(ndIdx).ndPrevValueIdx;
+		ASTNode res = store.get(treeIdx).get(ndIdx);
+		if (res == null)
+			return -1;
+		else
+			return res.ndPrevValueIdx;
 	}
 	
+	/*public Integer getNdPrevType(Integer ndIdx) {
+		ASTNode res = store.get(treeIdx).get(ndIdx);
+		if (res == null)
+			return -1;
+		else
+			return res.ndPrevTypeIdx;
+	}*/
+
 	public Iterator getNdIterator() {
-		return store.entrySet().iterator();
+		return store.get(treeIdx).entrySet().iterator();
 	}
 }

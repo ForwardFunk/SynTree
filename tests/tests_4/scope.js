@@ -63,14 +63,14 @@ var Sp = Scope.prototype;
 // Will be overridden after an instance lazily calls scanScope.
 Sp.didScan = false;
 
-Sp.declares = function(name) { // T1 DST on: Sp
+Sp.declares = function(name) { // T1 DST on: Sp == C3 DST
     this.scan(); // T1 SRC on: this
-    return hasOwn.call(this.bindings, name); 
+    return hasOwn.call(this.bindings, name); // C3 SRC on this
 };
 
-Sp.declaresType = function(name) { // T2 DST on: Sp
+Sp.declaresType = function(name) { // T2 DST on: Sp == C4 DST
     this.scan(); // T2 SRC on: this
-    return hasOwn.call(this.types, name);
+    return hasOwn.call(this.types, name); // C4 SRC on this
 };
 
 Sp.declareTemporary = function(prefix) { // T3 DST on: Sp
@@ -126,13 +126,13 @@ Sp.scan = function(force) {
     }
 };
 
-Sp.getBindings = function () { // DST T4 on Sp
-    this.scan();
+Sp.getBindings = function () { // DST T4 on Sp= DST C1
+    this.scan(); // SRC C1 on this
     return this.bindings; // SRC T4 on this
 };
 
-Sp.getTypes = function () { // DST T5 on Sp
-    this.scan();
+Sp.getTypes = function () { // DST T5 on Sp = DST C2
+    this.scan(); // SRC C2 on this
     return this.types; // SRC T5 on this
 };
 
