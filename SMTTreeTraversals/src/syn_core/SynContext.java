@@ -69,7 +69,6 @@ public class SynContext extends Context {
 		opIndVars = new Expr[opNum];
 		ArrayList<IntExpr[]> dstVars = new ArrayList<IntExpr[]>();
 		
-		System.out.println("mkSynthesisFormula: Defining switches for DSL ops...");
 		// Initialize Op variables as switches for DSL operations
 		for (int i = 0; i < opNum; i++) {
 			opIndSorts[i] = mkIntSort();
@@ -96,7 +95,6 @@ public class SynContext extends Context {
 			dslFunDefinitions = DSLHelper.initDSLMacros(astStore, this);
 		}*/
 		
-		System.out.println("mkSynthesisFormula: Formulating the body of 'exists' quantifier...");
 		Expr existsBody = null;
 		for (int i = 0; i < srcDstPairs.size(); i++) {
 			
@@ -121,7 +119,6 @@ public class SynContext extends Context {
 			}
 		}
 
-		System.out.println("mkSynthesisFormula: Adding constraints for switches (0 <= op < DSL.opCount)...");
 		// Introduce a constraint for DSL operation switches: op[i] >= 0 && op[i] <= MAX_NUM_OF_INSTRUCTIONS-1
 		BoolExpr existDSLOpSwitches = mkExists(opIndSorts, opIndNames, existsBody, 1, null, null, null, null);
 		BoolExpr constraintsDSLOpSwitches = mkAnd(
@@ -134,7 +131,6 @@ public class SynContext extends Context {
 												mkLe((ArithExpr) opIndVars[i], mkInt(DSLHelper.OP_CNT-1))));
 		}
 
-		System.out.println("mkSynthesisFormula: Creating - (&& switch_constraints exists_quantifier)...");
 		
 		BoolExpr synFormula = mkAnd(constraintsDSLOpSwitches, existDSLOpSwitches);
 		
@@ -170,7 +166,6 @@ public class SynContext extends Context {
 	}
 	
 	public TreeMap<Integer,Integer> mkModelInterpretation(Model model) {
-		System.out.println("mkModelInterpretation: Interpreting model...");
 		TreeMap<Integer, Integer> res = new TreeMap<>();
 		for (int i = 0; i < opNum; i++) {
 			Expr interp = model.getConstInterp(opIndVars[i]);

@@ -41,14 +41,6 @@ public class DSLHelper {
 	private static ArrayExpr arrRight;
 	//private static ArrayExpr arrPrevNodeType;
 	
-	private static FuncDecl funUp;
-	private static FuncDecl funDownFirst;
-	private static FuncDecl funDownLast;
-	private static FuncDecl funPrevNodeVal;
-	private static FuncDecl funPrevLeaf;
-	private static FuncDecl funNextLeaf;
-	private static FuncDecl funLeft;
-	private static FuncDecl funRight;
 	
 	// Will be called to get operation definitions,
 	// during generation of the Synthesis formula
@@ -112,46 +104,6 @@ public class DSLHelper {
 					(BoolExpr) stArrPrevLeaf, (BoolExpr) stArrNextLeaf, (BoolExpr) stArrLeft, (BoolExpr) stArrRight);
 		}
 		return result;
-	}
-	
-	public static BoolExpr initDSLMacros(ASTStore astStore, Context z3Ctx) {
-		funUp = z3Ctx.mkFuncDecl("funUp", z3Ctx.mkIntSort(), z3Ctx.mkIntSort());
-		funDownFirst = z3Ctx.mkFuncDecl("funDownFirst", z3Ctx.mkIntSort(), z3Ctx.mkIntSort());
-		funDownLast = z3Ctx.mkFuncDecl("funDownLast", z3Ctx.mkIntSort(), z3Ctx.mkIntSort());
-		funPrevLeaf = z3Ctx.mkFuncDecl("funPrevLeaf", z3Ctx.mkIntSort(), z3Ctx.mkIntSort());
-		funNextLeaf = z3Ctx.mkFuncDecl("funNextLeaf", z3Ctx.mkIntSort(), z3Ctx.mkIntSort());
-		funPrevNodeVal = z3Ctx.mkFuncDecl("funPrevNodeVal", z3Ctx.mkIntSort(), z3Ctx.mkIntSort());
-		funLeft = z3Ctx.mkFuncDecl("funLeft", z3Ctx.mkIntSort(), z3Ctx.mkIntSort());
-		funRight = z3Ctx.mkFuncDecl("funRight", z3Ctx.mkIntSort(), z3Ctx.mkIntSort());
-		
-		HashMap<Integer, FuncDecl> funcDecls = new HashMap<>();
-		funcDecls.put(OP_UP, funUp);
-		funcDecls.put(OP_DOWN_FIRST, funDownFirst);
-		funcDecls.put(OP_DOWN_LAST, funDownLast);
-		funcDecls.put(OP_PREV_LEAF, funPrevLeaf);
-		funcDecls.put(OP_NEXT_LEAF, funNextLeaf);
-		funcDecls.put(OP_PREV_NODE_VAL, funPrevNodeVal);
-		funcDecls.put(OP_LEFT, funLeft);
-		funcDecls.put(OP_RIGHT, funRight);
-		
-		BoolExpr[] macroList = new BoolExpr[OP_CNT-1];
-		for (int i = 0; i < OP_CNT-1; i++) {
-			Sort dslVarSort = z3Ctx.mkIntSort();
-			Symbol dslVarName= z3Ctx.mkSymbol("dslVar_"+String.valueOf(i));
-			Expr opVar = z3Ctx.mkConst(dslVarName, dslVarSort);
-			
-			Expr fun = z3Ctx.mkApp(funcDecls.get(i), opVar);
-			Expr funBody = mkDSLOpITE(z3Ctx, i, opVar, astStore.getNdIterator(), astStore);
-			Expr ITEBody = z3Ctx.mkEq(fun,funBody);
-			Expr[] opVars = new Expr[1];
-			opVars[0] = opVar;
-			BoolExpr macro = z3Ctx.mkForall(opVars, ITEBody, 1, null, null, null, null);
-			macroList[i] = macro;
-		}
-		
-		return z3Ctx.mkAnd(macroList);
-		
-		
 	}
 	
 	private static Expr mkDSLOpITE(Context z3Ctx, int opCode, Expr opVar, Iterator it, ASTStore astStore) {

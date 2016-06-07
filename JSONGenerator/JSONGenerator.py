@@ -143,6 +143,6 @@ if __name__ == '__main__':
             
             json_output = json.dumps([el.__dict__ for el in lst_nodes])
             
-            out_file = open(program[:-6]+"_augmented" + program[-6]+".json", "w")
+            out_file = open(program[:-5]+"_augmented.json", "w")
             out_file.write(json_output)
             out_file.close()

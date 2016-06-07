@@ -44,7 +44,7 @@ public class BranchClassifier {
 		for (Integer criterion : criteria) {
 			srcDstPairsClassified.putAll(applyCriterion(criterion));
 		}
-		print(srcDstPairsClassified);
+		//print(srcDstPairsClassified);
 	}
 	
 	public ArrayList<ArrayList<Pair<Integer, Integer>>> getClassification(int criterionIdx) {
@@ -98,7 +98,6 @@ public class BranchClassifier {
 				result.put(key, list);
 			}				
 		}
-		print(result);
 		return result;
 		
 	}
@@ -180,5 +179,16 @@ public class BranchClassifier {
 			}
 		}
 		return false;
+	}
+
+	public String getCriterionName(int criterionIdx) {
+		switch (criteria.get(criterionIdx)) {
+		case CRIT_SRC_DST_VALUE:
+			return "SRC_DST_HAVE_SAME_VALUE";
+		case CRIT_SRC_IS_IN_CALL_EXPRESSION:
+			return "SRC_IN_CALL_EXPRESSION";
+		default:
+			return "unknown_criteria";
+		}
 	}
 }
