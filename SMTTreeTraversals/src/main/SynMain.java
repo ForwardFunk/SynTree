@@ -23,30 +23,36 @@ import org.apache.commons.cli.*;
 
 public class SynMain {
 	
-	private static String dirNameAugmented = "/asts_augmented/";
+	private static String dirNameAugmented = "./asts_augmented/";
 
 	public static int maxOpNum = 10;
 	public static int startOpNum = 10;
-	private static boolean baselineMode = false;
-	private static String dirName = "";
-	private static String fNameMain = "";
-	private static String fNameAst = "";
-	private static String fNameTrain = "";
-	private static String fNameTest = "";
-	private static String fNameCheck = "";
 	
-	private static final String optDirTest = "dir-test";
+	private static boolean baselineMode = false;
+	private static boolean efficientLookup = true;
+	
+	public static boolean statsOnly = true;
+	private static String dirName ="./tests/tests_4/harder/";
+	private static String altDirName ="";
+	private static String fNameMain = "programs.json";
+	private static String fNameAst = "programs_augmented.json";
+	private static String fNameTrain = "train";
+	private static String fNameTest = "test";
+	private static String fNameCheck = "expected";
+	
+	private static final String optDirTest = "dirtest";
+	private static final String optAltDirTest = "altdirtest";
 	private static final String optOpMin = "opmin";
 	private static final String optOpMax = "opmax";
-	private static final String optFNameAst = "f-ast";
-	private static final String optFNameTrain = "f-train";
-	private static final String optFNameTest = "f-test";
-	private static final String optFNameCheck = "f-check";
-	private static final String optDirAug = "dir-aug";
+	private static final String optFNameAst = "fast";
+	private static final String optFNameTrain = "ftrain";
+	private static final String optFNameTest = "ftest";
+	private static final String optFNameCheck = "fcheck";
+	private static final String optDirAug = "diraug";
 	private static final String optStrBaseline = "baseline";
-	
-	
-	private static boolean efficientLookup = false;
+	private static final String optStrSlowLookup = "slowlookup";
+	private static final String optStrStatsOnly = "statsonly";
+
 	private static HashMap<Integer, ArrayList<Pair<Integer, Integer>>> trainSrcDstPairs;
 	private static HashMap<Integer, ArrayList<Integer>> trainSrcVals;
 	private static HashMap<Integer, ArrayList<Pair<Integer,Integer>>> testSrcDstPairs;
@@ -68,9 +74,9 @@ public class SynMain {
 		long startTime = System.currentTimeMillis();
 		
 		// Augment the json from the testdir with extra information about nodes (previous_id, prev_leaf...)
-		String command = "python ./python/JSONGenerator.py" + " " +fNameMain + " " + dirNameAugmented;
+		String command = "python ./python/JSONGenerator.py" + " " + fNameMain + " " + dirNameAugmented;
 		try {
-			int p = Runtime.getRuntime().exec(command).waitFor();
+			Runtime.getRuntime().exec(command).waitFor();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -95,26 +101,56 @@ public class SynMain {
 			ArrayList<Pair<Integer, Integer>> srcDstPairs = (ArrayList<Pair<Integer, Integer>>) en.getValue();
 			astStore.setTreeIdx(treeIdx);
 			
-			System.out.println("Training: trying to synthesize a straightline program.");
+			System.out.printf("Training program (baseline=%b, opmin=%d, opmax=%d, efficient (makes sense if smt)=%b, testdir=%s...\n\n", 
+							baselineMode, startOpNum, maxOpNum, efficientLookup, dirName);
 			if (SynEngine.trainProgram(treeIdx, astStore, efficientLookup, false, null, srcDstPairs)) {
-				System.out.println("Training: found straightline program!");
-				System.out.println("=====");
 				testProgram(false);
+				if (!altDirName.equals("")) {
+					testProgramWithNewAst(false);
+				}
 			} else {
-				System.out.println("Training: straightline program not found... trying to synthesize branched program.");
 				if (SynEngine.trainBranchedProgram(treeIdx, (bc=new BranchClassifier(astStore, srcDstPairs)), astStore, efficientLookup, srcDstPairs)) {
-					System.out.println("Training: branched program found!");
-					System.out.println("=====");
 					testProgram(true);
+					if (!altDirName.equals("")) {
+						testProgramWithNewAst(true);
+					}
 				} else {
 					System.out.println("Couldn't find a satisfying program...");
 				}
 			}
-			long stopTime = System.currentTimeMillis();
-		    long elapsedTime = stopTime - startTime;
-		    System.out.println((double)elapsedTime/1000 + "s");
+			
+			printStats(startTime);
 		}
 		
+	}
+	
+	private static void printStats(long startTime) {
+
+		// print time
+		if (SynEngine.modelInterpretation != null) {
+			System.out.printf("No. of instr.: %d\n",SynEngine.modelInterpretation.size());
+		} else if (SynEngine.branchedModelInterpretation.size() > 0) {
+			Iterator it = SynEngine.branchedModelInterpretation.entrySet().iterator();
+			ArrayList<Integer> instrCnt = new ArrayList();
+			while (it.hasNext()) {
+				Map.Entry en = (Map.Entry) it.next();
+				TreeMap<Integer, Integer> val = (TreeMap<Integer, Integer>) en.getValue();
+				instrCnt.add(val.size());
+			}
+			System.out.printf("No. of instr: %s\n", instrCnt.toString());
+		}
+		
+		long stopTime = System.currentTimeMillis();
+	    long elapsedTime = stopTime - startTime;
+	    System.out.printf("Time: %fs\n", (double)elapsedTime/1000);
+	    
+	    
+	    Runtime rt = Runtime.getRuntime();
+	    rt.gc();
+	   
+	    long mem = rt.totalMemory() - rt.freeMemory();
+	    System.out.printf("Mem. usage: %d\n", mem);
+	    System.out.println("=================");
 	}
 	
 	private static void parseArguments(String[] argv) {
@@ -126,7 +162,10 @@ public class SynMain {
 		Option optAugDir = OptionBuilder.hasArg().create(optDirAug);
 		Option optMin = OptionBuilder.hasArg().create(optOpMin);
 		Option optMax = OptionBuilder.hasArg().create(optOpMax);
+		Option optAltTestDir = OptionBuilder.hasArg().create(optAltDirTest);
 		Option optBaseline = new Option(optStrBaseline, false, "Enable baseline mode.");
+		Option optSlowLookup = new Option(optStrSlowLookup, false, "Enable slow DSL function application in SMT.");
+		Option optStatsOnly = new Option(optStrStatsOnly, false, "Only display statistics of runtime.");
 		
 		Options options = new Options();
 		CommandLineParser parser = new GnuParser();
@@ -140,62 +179,53 @@ public class SynMain {
 		options.addOption(optBaseline);
 		options.addOption(optMin);
 		options.addOption(optMax);
+		options.addOption(optSlowLookup);
+		options.addOption(optStatsOnly);
+		options.addOption(optAltTestDir);
 		try 
 		{
 			CommandLine cl = parser.parse(options, argv);
 			if (cl.hasOption(optDirTest)) {
 				dirName = cl.getOptionValue(optDirTest);
-			} else {
-				dirName = "../tests/tests_4/harder/";
-			}
+			} 
+			
+			if (cl.hasOption(optAltDirTest)) {
+				altDirName = cl.getOptionValue(optAltDirTest);
+			} 
 			
 			if (cl.hasOption(optFNameAst)) {
 				fNameMain = cl.getOptionValue(optFNameAst);
-			} else {
-				fNameMain = "programs.json";
-			}	
+			} 
 			
 			if (cl.hasOption(optFNameTrain)) {
 				fNameTrain = cl.getOptionValue(optFNameTrain);
-			} else {
-				fNameTrain = "train";
-			}
+			} 
 			
 			if (cl.hasOption(optFNameTest)) {
 				fNameTest = cl.getOptionValue(optFNameTest);
-			} else {
-				fNameTest = "test";
-			}
+			} 
 			
 			if (cl.hasOption(optFNameCheck)) {
 				fNameCheck = cl.getOptionValue(optFNameCheck);
-			} else {
-				fNameCheck = "expected";	
-			}	
+			} 
 			
 			if (cl.hasOption(optDirAug)) {
 				dirNameAugmented = cl.getOptionValue(optDirAug);
-			} else {
-				dirNameAugmented = "./asts_augmented/";
-			}
+			} 
 			
-			if (cl.hasOption(optStrBaseline)) {
-				baselineMode = true;
-			} else {
-				baselineMode = false;
-			}
+			//baselineMode = cl.hasOption(optStrBaseline);
+			//efficientLookup = !cl.hasOption(optStrSlowLookup);
+			statsOnly = cl.hasOption(optStrStatsOnly); 
 			
 			if (cl.hasOption(optOpMin)) {
 				startOpNum = Integer.valueOf(cl.getOptionValue(optOpMin));
 			} else {
-				startOpNum = 4;
+				startOpNum = 10;
 			}
 			
 			if (cl.hasOption(optOpMax)) {
 				maxOpNum = Integer.valueOf(cl.getOptionValue(optOpMax));
-			} else {
-				maxOpNum = 10;
-			}
+			} 
 			
 		} 
 		catch (ParseException exception) {
@@ -203,7 +233,6 @@ public class SynMain {
             System.out.println(exception.getMessage());
         }
 		
-		fNameAst = "programs_augmented.json";
 		
 		fNameMain = dirName + fNameMain;
 
@@ -212,10 +241,10 @@ public class SynMain {
 		fNameTrain = dirName + fNameTrain;
 		fNameTest = dirName + fNameTest;
 		fNameCheck = dirName + fNameCheck;		
-		efficientLookup = true;		
 		SynEngine.setBaselineMode(baselineMode);  
 	}
 	
+	@SuppressWarnings("unchecked")
 	private static void testProgram(boolean branched) {
 		testSrcDstPairs = new HashMap<>();
 		Iterator it = trainSrcVals.entrySet().iterator();
@@ -227,7 +256,7 @@ public class SynMain {
 				TreeMap<Integer, Integer> program = null;
 				if (branched) {
 					Iterator itPrograms = SynEngine.branchedModelInterpretation.entrySet().iterator();
-					TreeMap<Integer, Integer> defaultProgram = null;	
+					TreeMap<Integer, Integer> defaultProgram = null;
 					while (itPrograms.hasNext()) {
 						Map.Entry enPrograms = (Entry) itPrograms.next();
 						Pair<Integer, Object> branchCond = (Pair<Integer, Object>) enPrograms.getKey();
@@ -237,7 +266,7 @@ public class SynMain {
 						}
 						else if (bc.classifySrcNode(srcNdIdx, branchCond)) {
 							program = currProgram;
-							break;
+							//break;
 						}
 					}
 					if (program == null) {
@@ -258,14 +287,30 @@ public class SynMain {
 				testSrcDstPairs.get(treeIdx).add(new Pair(srcNdIdx, DSLHelper.applyDSLSequence(srcNdIdx, astStore, programDslSequence)));
 			}
 		}
-		validateProgram();
+		validateAndShowProgram();
 	}
 	
-	private static void validateProgram() {
+	private static void testProgramWithNewAst(boolean branched) {
+		String command = "python ./python/JSONGenerator.py" + " " + (altDirName + "programs.json") + " " + dirNameAugmented;
+		try {
+			Runtime.getRuntime().exec(command).waitFor();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		astStore = new ASTStore(fNameAst);
+		testProgram(branched);
+	}
+	
+	private static void validateAndShowProgram() {
 		Iterator itTest = testSrcDstPairs.entrySet().iterator();
 		Iterator itCheck = checkSrcDstPairs.entrySet().iterator();
 		
-		System.out.println("Synthesis validation: (c - computed, e - expected)");
+		if (!statsOnly)
+			System.out.println("Synthesis validation: (c - computed, e - expected)");
 		while (itTest.hasNext() && itCheck.hasNext()) {
 			Map.Entry enTest = (Entry) itTest.next();
 			Map.Entry enCheck = (Entry) itCheck.next();
@@ -278,14 +323,36 @@ public class SynMain {
 			ArrayList<Pair<Integer, Integer>> pairsCheck = (ArrayList<Pair<Integer,Integer>>) enCheck.getValue();
 			
 			assert(pairsTest.size() == pairsCheck.size());
+			boolean validates = true;
 			for (int i = 0; i < pairsTest.size(); i++) {
 				Pair<Integer, Integer> pairTest = pairsTest.get(i);
 				Pair<Integer, Integer> pairCheck = pairsCheck.get(i);
 				
 				// Src node indices have to match in both pairs
 				assert (pairTest.first.equals(pairCheck.first));
+				validates = validates && pairTest.second.equals(pairCheck.second);
 				String test = pairTest.second.equals(pairCheck.second) ? "OK!" : "Invalid!";
-				System.out.println(treeIdxTest.toString() + " " + pairTest.first.toString()  + " " + "c:"+pairTest.second + "/e:" + pairCheck.second + " " + test);
+				if (!statsOnly)
+					System.out.println(treeIdxTest.toString() + " " + pairTest.first.toString()  + " " + "c:"+pairTest.second + "/e:" + pairCheck.second + " " + test);
+			}
+			if (validates)
+				System.out.println("Program validates!\n");
+			else
+				System.out.println("Program doesn't validate, please check!\n");
+				
+		}
+		
+		// Show program
+		if (SynEngine.modelInterpretation != null) {
+			System.out.println(DSLHelper.programToString(SynEngine.modelInterpretation));		
+		} else if (SynEngine.branchedModelInterpretation.size() > 0) {
+			Iterator it = SynEngine.branchedModelInterpretation.entrySet().iterator();
+			while (it.hasNext()) {
+				Map.Entry en = (Entry) it.next();
+				TreeMap<Integer, Integer> branch = (TreeMap<Integer, Integer>) en.getValue();
+				
+				System.out.println(BranchClassifier.parseBranchCondition((Pair<Integer, Object>)en.getKey()));
+				System.out.println(DSLHelper.programToString(branch));
 			}
 		}
 	}

@@ -39,14 +39,21 @@ public class SynEngine {
 		
 		boolean synAll = true;
 		for(int i = 0; i < bc.criteriaCnt; i++) {
-			System.out.println("Training branched: Getting classification according to criteria -> " + bc.getCriterionName(i));
+			if (!SynMain.statsOnly) {
+				System.out.println("Training branched: Getting classification according to criteria -> " + bc.getCriterionName(i));
+			}
 			if (bc.isFakeCriterion(i)) {
-				System.out.println("Training branched: " + bc.getCriterionName(i) + " is false criterion... (all pairs are within one branch)");
-				System.out.println("======");
+				if (!SynMain.statsOnly) {
+					System.out.println("Training branched: " + bc.getCriterionName(i) + " is false criterion... (all pairs are within one branch)");
+					System.out.println("======");
+				}
 				continue;
 			}
-			System.out.println("Training branched: " + bc.getCriterionName(i) + " classification successful!");
-			System.out.println("======");
+
+			if (!SynMain.statsOnly) {
+				System.out.println("Training branched: " + bc.getCriterionName(i) + " classification successful!");
+				System.out.println();
+			}
 			ArrayList<ArrayList<Pair<Integer, Integer>>> currSrcDstPairs = bc.getClassification(i);
 			for (ArrayList<Pair<Integer, Integer>> branchPairs : currSrcDstPairs) {
 				boolean canTrainProgram = false;
@@ -68,6 +75,18 @@ public class SynEngine {
 	
 	public static void setBaselineMode(boolean isOn) {
 		baseline = isOn;
+	}
+	
+	public static TreeMap<Integer, Integer> eliminateDeadCode(TreeMap<Integer, Integer> program) {
+		Iterator it = program.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry en = (Entry) it.next();
+			Integer dslOp = (Integer) en.getValue();
+			if (dslOp == DSLHelper.OP_NOP) {
+				it.remove();
+			} 
+		}
+		return program;
 	}
 	
 }

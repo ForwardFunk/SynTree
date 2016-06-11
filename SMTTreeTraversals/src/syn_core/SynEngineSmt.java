@@ -31,19 +31,21 @@ public class SynEngineSmt {
 		boolean programFound = false;
 		while (!programFound && opNum <= SynMain.maxOpNum) {
 			ctx.setOpNum(opNum);
-			System.out.println("Training" + (branchedTraining ? " single branch: " : " program: ") + " checking synthesis satisfiability with max op. count: " + opNum);
+			if (!SynMain.statsOnly)
+				System.out.println("Training" + (branchedTraining ? " single branch: " : " program: ") + " checking synthesis satisfiability with max op. count: " + opNum);
 			try {
 				BoolExpr synFormula = ctx.mkSynthesisFormula();
+				//System.out.println(synFormula);
 				Solver solve = ctx.mkSolver();
 				solve.add(synFormula);
 				Status stat = solve.check();
 				if (stat == Status.SATISFIABLE) {
 					Model mod = solve.getModel();
 					if (branchedTraining) {
-						SynEngine.branchedModelInterpretation.put(branchCondValue, eliminateDeadCode(ctx.mkModelInterpretation(mod)));
+						SynEngine.branchedModelInterpretation.put(branchCondValue, SynEngine.eliminateDeadCode(ctx.mkModelInterpretation(mod)));
 					}
 					else {
-						SynEngine.modelInterpretation = eliminateDeadCode(ctx.mkModelInterpretation(mod));
+						SynEngine.modelInterpretation = SynEngine.eliminateDeadCode(ctx.mkModelInterpretation(mod));
 					}
 					programFound = true;
 				} else {		
@@ -54,21 +56,11 @@ public class SynEngineSmt {
 				e.printStackTrace();
 			}
 		}
-		System.out.println("======");
+		System.out.println();
 		ctx.dispose();
 		return programFound;
 	}
 	
-	private static TreeMap<Integer, Integer> eliminateDeadCode(TreeMap<Integer, Integer> program) {
-		Iterator it = program.entrySet().iterator();
-		while (it.hasNext()) {
-			Map.Entry en = (Entry) it.next();
-			Integer dslOp = (Integer) en.getValue();
-			if (dslOp == DSLHelper.OP_NOP) {
-				it.remove();
-			} 
-		}
-		return program;
-	}
+	
 
 }

@@ -17,11 +17,11 @@ public class SynEngineBaseline {
 			dslOps.add(i);
 		}
 		for (int opNum = SynMain.startOpNum; opNum <= SynMain.maxOpNum && !programFound; opNum++) {
-			System.out.println("Training" + (branchedTraining ? " single branch: " : " program: ") + " checking synthesis satisfiability with max op. count: " + opNum);
-			//ArrayList<ArrayList<Integer>> programs = combinations(dslOps, opNum);
-			
-			//for (ArrayList<Integer> program : programs) {
-		    final String chars = "0123456789abcdefghijklmnopqrstuvwxyz";
+			if (!SynMain.statsOnly) {
+				System.out.println("Training" + (branchedTraining ? " single branch: " : " program: ") + " checking synthesis satisfiability with max op. count: " + opNum);
+			}
+				
+			final String chars = "0123456789abcdefghijklmnopqrstuvwxyz";
 			
 	        double powVal = Math.pow(opNum, dslOps.size());
 	        for (int i = 0; i < powVal; i++) {
@@ -36,39 +36,44 @@ public class SynEngineBaseline {
 	            	//System.out.println(chars.indexOf(c));
 	               	program.add(dslOps.get(chars.indexOf(c)));
 	            }
-	            //System.out.println(program);
-				int k = 0;
-				Integer[] arrProgram = new Integer[program.size()];
-				for (Integer j : program) {
-					arrProgram[k++] = j;
-				}
-				boolean programOk = true;
-				for (Pair<Integer, Integer> pair : srcDstPairs) {
-					int src = pair.first;
-					int dst = pair.second;
-					
-					int dstComputed = DSLHelper.applyDSLSequence(src, astStore, arrProgram);
-					
-					programOk = programOk && (dst == dstComputed);
-					
-					if (!programOk)
+	            //if (program.toString().equals("[0, 0, 0, 0, 0, 4, 1]"))
+	            // Add trailing zeros
+	            for (int j = program.size(); j <= opNum; j++ ) {
+		            //System.out.println(program);
+					int k = 0;
+					Integer[] arrProgram = new Integer[program.size()];
+					for (Integer op : program) {
+						arrProgram[k++] = op;
+					}
+					boolean programOk = true;
+					for (Pair<Integer, Integer> pair : srcDstPairs) {
+						int src = pair.first;
+						int dst = pair.second;
+						
+						int dstComputed = DSLHelper.applyDSLSequence(src, astStore, arrProgram);
+						
+						programOk = programOk && (dst == dstComputed);
+						
+						if (!programOk)
+							break;
+					}
+					if (programOk) {
+						programFound = true;
+						if (branchedTraining) {
+							SynEngine.branchedModelInterpretation.put(branchCondValue, SynEngine.eliminateDeadCode(cvtToTreeMap(arrProgram)));
+						}
+						else {
+							SynEngine.modelInterpretation = SynEngine.eliminateDeadCode(cvtToTreeMap(arrProgram));
+						}
 						break;
-				}
-				if (programOk) {
-					programFound = true;
-					if (branchedTraining) {
-						SynEngine.branchedModelInterpretation.put(branchCondValue, cvtToTreeMap(arrProgram));
 					}
-					else {
-						SynEngine.modelInterpretation = cvtToTreeMap(arrProgram);
-					}
-					break;
+					program.add(0, 0);
 				}
-			}
+	        }
 			
 		}
-
-		System.out.println("======");
+		if (!SynMain.statsOnly)
+			System.out.println();
 		return programFound;
 	}
 	

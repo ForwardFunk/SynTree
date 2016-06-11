@@ -97,7 +97,6 @@ class ASTParser {
 					
 					astStore.get(currTreeIdx).put(ndIdx, new ASTNode(ndIdx, ndParentIdx, ndPrevLeafIdx, ndNextLeafIdx, ndLeftIdx, ndRightIdx, ndPrevValueIdx, /*ndPrevTypeIdx,*/ ndChildren, ndType, ndValue));
 				}
-				//int currTreeIdx = mainArray.getAsInt(treeIdx);*/
 				
 			}
 		} catch (FileNotFoundException e) {

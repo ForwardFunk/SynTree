@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.TreeMap;
 
 import ast_utils.ASTStore;
 
@@ -23,13 +25,13 @@ public class DSLHelper {
 	public static final int OP_UP = 0;
 	public static final int OP_DOWN_FIRST = 1;
 	public static final int OP_DOWN_LAST = 2;
-	public static final int OP_PREV_NODE_VAL = 3;
-	public static final int OP_LEFT = 4;	
-	public static final int OP_RIGHT = 5;	
-	public static final int OP_NOP = 6;
-	public static final int OP_PREV_LEAF = 7;	
-	public static final int OP_NEXT_LEAF = 8;	
-	//public static final int OP_PREV_NODE_TYPE = 9;
+	public static final int OP_LEFT = 3;	
+	public static final int OP_RIGHT = 4;	
+	public static final int OP_NOP = 5;
+	public static final int OP_PREV_LEAF = 6;	
+	public static final int OP_NEXT_LEAF = 7;
+	public static final int OP_PREV_NODE_VAL = 8;	
+	public static final int OP_PREV_NODE_TYPE = 9; //this is excluded
 	
 	private static ArrayExpr arrUp;
 	private static ArrayExpr arrDownFirst;
@@ -363,4 +365,14 @@ public class DSLHelper {
 		return currNd;
 	}
 	
+	
+	public static String programToString(TreeMap<Integer, Integer> program) {
+		String res = "";
+		Iterator it = program.entrySet().iterator();
+		while(it.hasNext()) {
+			Map.Entry en = (Entry) it.next();
+			res += ((Integer) en.getKey()) + ": " + decodeDSLOp(((Integer) en.getValue())) + "\n";
+		}
+		return res;
+	}
 }
