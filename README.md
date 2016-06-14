@@ -1,4 +1,4 @@
-SynTree - SMT Tree Traversal Synthesizer
+#SynTree - SMT Tree Traversal Synthesizer
 
 Copyright (C) 2016  Sevgi Kaya, Djordjevic Pavle
 
