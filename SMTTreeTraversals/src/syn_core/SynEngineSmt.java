@@ -31,7 +31,7 @@ public class SynEngineSmt {
 		boolean programFound = false;
 		while (!programFound && opNum <= SynMain.maxOpNum) {
 			ctx.setOpNum(opNum);
-			if (!SynMain.statsOnly)
+			if (!SynMain.statsOnly && !SynMain.resultsOnly)
 				System.out.println("Training" + (branchedTraining ? " single branch: " : " program: ") + " checking synthesis satisfiability with max op. count: " + opNum);
 			try {
 				BoolExpr synFormula = ctx.mkSynthesisFormula();
@@ -56,7 +56,9 @@ public class SynEngineSmt {
 				e.printStackTrace();
 			}
 		}
-		System.out.println();
+		
+		if (!SynMain.statsOnly && !SynMain.resultsOnly)
+			System.out.println();
 		ctx.dispose();
 		return programFound;
 	}

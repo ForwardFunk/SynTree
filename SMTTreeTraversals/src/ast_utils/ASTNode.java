@@ -8,14 +8,13 @@ class ASTNode {
 	public Integer ndLeft;
 	public Integer ndRight;
 	public Integer ndPrevValueIdx;
-	//public Integer ndPrevTypeIdx;
 	public Integer[] ndChildrenIdx;
 	public String ndType;
 	public String ndValue;
 	
 	ASTNode(Integer ndIdx, Integer ndParentIdx, Integer ndPrevLeaf,
 			Integer ndNextLeaf, Integer ndLeft, Integer ndRight,
-			Integer ndPrevValueIdx, /*Integer ndPrevTypeIdx, */Integer[] ndChildrenIdx, String ndType,
+			Integer ndPrevValueIdx, Integer[] ndChildrenIdx, String ndType,
 			String ndValue) {
 		this.ndIdx = ndIdx;
 		this.ndParentIdx = ndParentIdx;
@@ -27,7 +26,6 @@ class ASTNode {
 		this.ndChildrenIdx = ndChildrenIdx;
 		this.ndType = ndType;
 		this.ndValue = ndValue;
-		//this.ndPrevTypeIdx = ndPrevTypeIdx;
 	}
 
 }

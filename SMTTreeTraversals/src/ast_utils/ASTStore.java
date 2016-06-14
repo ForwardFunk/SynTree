@@ -2,6 +2,7 @@ package ast_utils;
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 public class ASTStore {
 
@@ -124,7 +125,7 @@ public class ASTStore {
 			return res.ndPrevTypeIdx;
 	}*/
 
-	public Iterator getNdIterator() {
+	public Iterator<Map.Entry<Integer, ASTNode>> getNdIterator() {
 		return store.get(treeIdx).entrySet().iterator();
 	}
 }

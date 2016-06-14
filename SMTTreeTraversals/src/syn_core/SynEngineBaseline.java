@@ -72,7 +72,7 @@ public class SynEngineBaseline {
 	        }
 			
 		}
-		if (!SynMain.statsOnly)
+		if (!SynMain.statsOnly && !SynMain.resultsOnly)
 			System.out.println();
 		return programFound;
 	}
@@ -84,50 +84,4 @@ public class SynEngineBaseline {
 		}
 		return result;
 	}
-	
-	private static ArrayList<ArrayList<Integer>> combinations(ArrayList<Integer> values, int maxLen) {
-
-        final String chars = "0123456789abcdefghijklmnopqrstuvwxyz";
-        ArrayList<ArrayList<Integer>> finalResult = new ArrayList();
-        double powVal = Math.pow(maxLen, values.size());
-        for (int i = 0; i < powVal; i++) {
-
-            String str = Integer.toString(i, values.size());
-
-            ArrayList<Integer> result = new ArrayList();
-            while (values.size() + str.length() < maxLen)
-                result.add(values.get(0));
-
-            for (char c : str.toCharArray())
-                result.add(values.get(chars.indexOf(c)));
-            
-            finalResult.add(result);            
-        }
-        return finalResult;
-	}
-	
-	/*private static ArrayList<ArrayList<Integer>> combinations(ArrayList<Integer> values, int maxLen) {
-		return combinations(values, maxLen, new ArrayList(), new ArrayList());
-	}
-	
-	private static ArrayList<ArrayList<Integer>> combinations(ArrayList<Integer> values, int length, ArrayList<Integer> current, ArrayList<ArrayList<Integer>> result) {
-		if (length == 0) {
-			ArrayList<ArrayList<Integer>> newResult = new ArrayList<>(result);
-			newResult.add(current);
-			return newResult;
-		}
-		
-		ArrayList<ArrayList<ArrayList<Integer>>> res3 = new ArrayList<>();
-		for(Integer i : values) {
-			ArrayList<Integer> newCurrent = new ArrayList<>(current);
-			newCurrent.add(i);
-			res3.add(combinations(values, length-1, newCurrent, result));
-		}
-		
-		ArrayList<ArrayList<Integer>> res2 = new ArrayList<>();
-		for (ArrayList<ArrayList<Integer>> list : res3) {
-			res2.addAll(list);
-		}
-		return res2;
-	}*/
 }

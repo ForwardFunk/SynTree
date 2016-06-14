@@ -28,5 +28,22 @@ if [[ $# -ne 3 ]]; then
 	exit -1
 fi
 
-
 # Run your analysis and produce output as defined above
+
+t1="./tests_1/"
+t2="./tests_2/"
+t3="./tests_3/"
+t4s="./tests_4/simple/"
+t4h="./tests_4/harder/"
+t5s1="./tests_5/simple/"
+t5s2="./tests_5/simple2/"
+t5h="./tests_5/harder/"
+t6="./tests_6/"
+
+vm_args=-Xmx2g
+syn_args="-fast $1 -ftrain $2 -ftest $3 -opmin 4 -opmax 7 --resultsonly"
+
+java -jar $vm_args "./SynTree.jar" $syn_args
+
+
+

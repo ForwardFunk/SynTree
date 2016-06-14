@@ -90,11 +90,7 @@ public class SynContext extends Context {
 		if (efficientLookup) {
 			dslArrayDefinitions = DSLHelper.initDSLArrays(astStore, this);
 		}
-		/*BoolExpr dslFunDefinitions = null;
-		if (efficientLookup) {
-			dslFunDefinitions = DSLHelper.initDSLMacros(astStore, this);
-		}*/
-		
+	
 		Expr existsBody = null;
 		for (int i = 0; i < srcDstPairs.size(); i++) {
 			

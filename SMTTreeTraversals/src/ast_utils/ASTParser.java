@@ -13,12 +13,10 @@ import com.google.gson.JsonParser;
 
 class ASTParser {
 
-	private static final String SPLIT_BY = ",";
 	private static final String DEFAULT_FILE_LOC = "programs_augmented.json";
 	
 	private static final String program_id = "program_id";
 	private static final String value = "value";
-	private static final String nodes = "nodes";
 	private static final String nodeIdx = "id";
 	private static final String parentIdx = "parent";
 	private static final String prevLeafIdx = "prev_leaf";
@@ -26,7 +24,6 @@ class ASTParser {
 	private static final String leftIdx = "left";
 	private static final String rightIdx = "right";
 	private static final String prevNodeValueIdx = "previous_id";
-	//private static final String prevNodeTypeIdx = "previous_id_type";
 	private static final String childrenIdx = "children";
 	private static final String type = "type";
 	
@@ -63,9 +60,6 @@ class ASTParser {
 					
 					String ndPrevValueIdxStr = ndObject.get(prevNodeValueIdx).getAsString();
 					Integer ndPrevValueIdx = ndPrevValueIdxStr.equals("") ? -1 : Integer.parseInt(ndPrevValueIdxStr);
-					
-					/*String ndPrevTypeIdxStr = ndObject.get(prevNodeTypeIdx).getAsString();
-					Integer ndPrevTypeIdx = ndPrevTypeIdxStr.equals("") ? -1 : Integer.parseInt(ndPrevTypeIdxStr);*/
 					
 					String ndPrevLeafIdxStr = ndObject.get(prevLeafIdx).getAsString();
 					Integer ndPrevLeafIdx = ndPrevLeafIdxStr.equals("") ? -1 : Integer.parseInt(ndPrevValueIdxStr);

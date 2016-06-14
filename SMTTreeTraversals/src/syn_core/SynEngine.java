@@ -39,18 +39,22 @@ public class SynEngine {
 		
 		boolean synAll = true;
 		for(int i = 0; i < bc.criteriaCnt; i++) {
-			if (!SynMain.statsOnly) {
+			if (!SynMain.statsOnly && !SynMain.resultsOnly) {
 				System.out.println("Training branched: Getting classification according to criteria -> " + bc.getCriterionName(i));
 			}
 			if (bc.isFakeCriterion(i)) {
-				if (!SynMain.statsOnly) {
+				if (!SynMain.statsOnly && !SynMain.resultsOnly) {
 					System.out.println("Training branched: " + bc.getCriterionName(i) + " is false criterion... (all pairs are within one branch)");
 					System.out.println("======");
 				}
+				// no criteria can be used
+				if (i == bc.criteriaCnt-1)
+					return false;
+				
 				continue;
 			}
 
-			if (!SynMain.statsOnly) {
+			if (!SynMain.statsOnly && !SynMain.resultsOnly) {
 				System.out.println("Training branched: " + bc.getCriterionName(i) + " classification successful!");
 				System.out.println();
 			}

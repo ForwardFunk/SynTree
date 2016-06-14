@@ -23,16 +23,17 @@ import org.apache.commons.cli.*;
 
 public class SynMain {
 	
-	private static String dirNameAugmented = "./asts_augmented/";
 
-	public static int maxOpNum = 10;
-	public static int startOpNum = 10;
+	public static int maxOpNum = 7;
+	public static int startOpNum = 4;
 	
 	private static boolean baselineMode = false;
-	private static boolean efficientLookup = true;
-	
+	private static boolean efficientLookup = false;
+	public static boolean resultsOnly = false;
 	public static boolean statsOnly = true;
-	private static String dirName ="./tests/tests_4/harder/";
+
+	private static String dirNameAugmented = "./asts_augmented/";
+	private static String dirName ="./tests/tests_1/";
 	private static String altDirName ="";
 	private static String fNameMain = "programs.json";
 	private static String fNameAst = "programs_augmented.json";
@@ -52,6 +53,7 @@ public class SynMain {
 	private static final String optStrBaseline = "baseline";
 	private static final String optStrSlowLookup = "slowlookup";
 	private static final String optStrStatsOnly = "statsonly";
+	private static final String optStrResultsOnly = "resultsonly";
 
 	private static HashMap<Integer, ArrayList<Pair<Integer, Integer>>> trainSrcDstPairs;
 	private static HashMap<Integer, ArrayList<Integer>> trainSrcVals;
@@ -91,7 +93,8 @@ public class SynMain {
 		// Parse the <src,dst> pairs from training, test, and validate files within the test dir
 		parseTrainingData();
 		parseTestData();
-		parseCheckData();
+		if (!resultsOnly)
+			parseCheckData();
 		
 		// For every JavaScript program in AST, find a SynTree program which satisfies all the <src,dst> pairs
 		Iterator it = trainSrcDstPairs.entrySet().iterator();
@@ -101,7 +104,8 @@ public class SynMain {
 			ArrayList<Pair<Integer, Integer>> srcDstPairs = (ArrayList<Pair<Integer, Integer>>) en.getValue();
 			astStore.setTreeIdx(treeIdx);
 			
-			System.out.printf("Training program (baseline=%b, opmin=%d, opmax=%d, efficient (makes sense if smt)=%b, testdir=%s...\n\n", 
+			if (!resultsOnly)
+				System.out.printf("Training program (baseline=%b, opmin=%d, opmax=%d, efficient (makes sense if smt)=%b, testdir=%s...\n\n", 
 							baselineMode, startOpNum, maxOpNum, efficientLookup, dirName);
 			if (SynEngine.trainProgram(treeIdx, astStore, efficientLookup, false, null, srcDstPairs)) {
 				testProgram(false);
@@ -115,11 +119,13 @@ public class SynMain {
 						testProgramWithNewAst(true);
 					}
 				} else {
-					System.out.println("Couldn't find a satisfying program...");
+					if (!resultsOnly)
+						System.out.println("Couldn't find a satisfying program...");
 				}
 			}
 			
-			printStats(startTime);
+			if (!resultsOnly)
+				printStats(startTime);
 		}
 		
 	}
@@ -166,6 +172,7 @@ public class SynMain {
 		Option optBaseline = new Option(optStrBaseline, false, "Enable baseline mode.");
 		Option optSlowLookup = new Option(optStrSlowLookup, false, "Enable slow DSL function application in SMT.");
 		Option optStatsOnly = new Option(optStrStatsOnly, false, "Only display statistics of runtime.");
+		Option optResultsOnly = new Option(optStrResultsOnly, false, "Only display resulting values of applying the program.");
 		
 		Options options = new Options();
 		CommandLineParser parser = new GnuParser();
@@ -182,6 +189,7 @@ public class SynMain {
 		options.addOption(optSlowLookup);
 		options.addOption(optStatsOnly);
 		options.addOption(optAltTestDir);
+		options.addOption(optResultsOnly);
 		try 
 		{
 			CommandLine cl = parser.parse(options, argv);
@@ -213,15 +221,14 @@ public class SynMain {
 				dirNameAugmented = cl.getOptionValue(optDirAug);
 			} 
 			
-			//baselineMode = cl.hasOption(optStrBaseline);
-			//efficientLookup = !cl.hasOption(optStrSlowLookup);
+			baselineMode = cl.hasOption(optStrBaseline);
+			efficientLookup = !cl.hasOption(optStrSlowLookup);
 			statsOnly = cl.hasOption(optStrStatsOnly); 
+			resultsOnly = cl.hasOption(optStrResultsOnly); 
 			
 			if (cl.hasOption(optOpMin)) {
 				startOpNum = Integer.valueOf(cl.getOptionValue(optOpMin));
-			} else {
-				startOpNum = 10;
-			}
+			} 
 			
 			if (cl.hasOption(optOpMax)) {
 				maxOpNum = Integer.valueOf(cl.getOptionValue(optOpMax));
@@ -234,13 +241,13 @@ public class SynMain {
         }
 		
 		
-		fNameMain = dirName + fNameMain;
+		//fNameMain = dirName + fNameMain;
 
 	 
 		fNameAst = dirNameAugmented + fNameAst;
-		fNameTrain = dirName + fNameTrain;
-		fNameTest = dirName + fNameTest;
-		fNameCheck = dirName + fNameCheck;		
+		//fNameTrain = dirName + fNameTrain;
+		//fNameTest = dirName + fNameTest;
+		//fNameCheck = dirName + fNameCheck;		
 		SynEngine.setBaselineMode(baselineMode);  
 	}
 	
@@ -287,7 +294,27 @@ public class SynMain {
 				testSrcDstPairs.get(treeIdx).add(new Pair(srcNdIdx, DSLHelper.applyDSLSequence(srcNdIdx, astStore, programDslSequence)));
 			}
 		}
-		validateAndShowProgram();
+		
+		if (!resultsOnly)
+			validateAndShowProgram();
+		else
+			showResults();
+	}
+	
+	private static void showResults() {
+		Iterator it = testSrcDstPairs.entrySet().iterator();
+		while (it.hasNext()) {
+			Map.Entry en = (Entry) it.next();
+			
+			int treeIdx = (int) en.getKey();
+			ArrayList<Pair<Integer, Integer>> pairs = (ArrayList<Pair<Integer, Integer>>) en.getValue();
+			for (Pair<Integer, Integer> pair : pairs) {
+				int src = pair.first;
+				int dst = pair.second;
+				
+				System.out.printf("%d\t%d %d\n", treeIdx, src, dst);
+			}
+		}
 	}
 	
 	private static void testProgramWithNewAst(boolean branched) {
@@ -332,7 +359,7 @@ public class SynMain {
 				assert (pairTest.first.equals(pairCheck.first));
 				validates = validates && pairTest.second.equals(pairCheck.second);
 				String test = pairTest.second.equals(pairCheck.second) ? "OK!" : "Invalid!";
-				if (!statsOnly)
+				if (!statsOnly && !resultsOnly)
 					System.out.println(treeIdxTest.toString() + " " + pairTest.first.toString()  + " " + "c:"+pairTest.second + "/e:" + pairCheck.second + " " + test);
 			}
 			if (validates)
